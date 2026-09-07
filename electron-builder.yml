@@ -1,0 +1,25 @@
+appId: com.demo.full-editor
+productName: Full Editor
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+asar: true
+npmRebuild: false
+electronLanguages:
+  - en
+  - zh_CN
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  icon: build/icon.icns
+  category: public.app-category.developer-tools
+  identity: null
+dmg:
+  title: Full Editor

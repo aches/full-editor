@@ -1,0 +1,94 @@
+/* CodeMirror sizing + syntax palette. Referenced from cm-theme.ts via var(). */
+
+.editor-host,
+.editor-host .cm-editor {
+  height: 100%;
+}
+
+.editor-host .cm-editor {
+  background: transparent;
+}
+
+:root,
+[data-theme='light'] {
+  --cm-active-line: color-mix(in oklab, var(--foreground) 4%, transparent);
+  --cm-gutter: oklch(0.7 0.008 95);
+  --cm-keyword: oklch(0.46 0.16 300);
+  --cm-string: oklch(0.47 0.09 168);
+  --cm-number: oklch(0.52 0.13 45);
+  --cm-comment: oklch(0.62 0.015 95);
+  --cm-function: oklch(0.46 0.13 250);
+  --cm-type: oklch(0.5 0.11 85);
+  --cm-property: oklch(0.44 0.1 220);
+  --cm-tag: oklch(0.5 0.14 20);
+  --cm-meta: oklch(0.55 0.02 280);
+  --cm-link: var(--accent);
+  --cm-heading: var(--foreground);
+  --cm-regexp: oklch(0.5 0.13 130);
+
+  --icon-folder: oklch(0.62 0.07 240);
+  --icon-doc: oklch(0.55 0.08 250);
+  --icon-config: oklch(0.6 0.1 75);
+  --icon-code: oklch(0.55 0.09 168);
+  --icon-markup: oklch(0.6 0.11 25);
+  --icon-shell: oklch(0.52 0.1 150);
+  --icon-data: oklch(0.55 0.1 300);
+  --icon-log: oklch(0.6 0.06 60);
+  --icon-media: oklch(0.58 0.11 330);
+}
+
+[data-theme='dark'] {
+  --cm-active-line: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --cm-gutter: oklch(0.45 0.008 270);
+  --cm-keyword: oklch(0.75 0.12 305);
+  --cm-string: oklch(0.78 0.09 168);
+  --cm-number: oklch(0.78 0.11 60);
+  --cm-comment: oklch(0.55 0.015 270);
+  --cm-function: oklch(0.75 0.1 250);
+  --cm-type: oklch(0.8 0.1 90);
+  --cm-property: oklch(0.75 0.08 220);
+  --cm-tag: oklch(0.74 0.11 20);
+  --cm-meta: oklch(0.65 0.02 280);
+  --cm-regexp: oklch(0.75 0.1 130);
+
+  --icon-folder: oklch(0.7 0.06 240);
+  --icon-doc: oklch(0.72 0.07 250);
+  --icon-config: oklch(0.75 0.09 75);
+  --icon-code: oklch(0.74 0.08 168);
+  --icon-markup: oklch(0.72 0.09 25);
+  --icon-shell: oklch(0.72 0.09 150);
+  --icon-data: oklch(0.72 0.08 300);
+  --icon-log: oklch(0.7 0.05 60);
+  --icon-media: oklch(0.72 0.09 330);
+}
+
+/* Log file semantics */
+.cm-log-error {
+  background: var(--danger-soft);
+  box-shadow: inset 2px 0 0 var(--danger);
+}
+.cm-log-warn {
+  background: var(--warning-soft);
+  box-shadow: inset 2px 0 0 var(--warning);
+}
+.cm-log-dim {
+  opacity: 0.55;
+}
+.cm-log-timestamp {
+  color: var(--muted);
+}
+
+/* Image viewer backdrop */
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, var(--background-tertiary) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--background-tertiary) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--background-tertiary) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--background-tertiary) 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: editor-file:; font-src 'self' data:; connect-src 'self' ws://localhost:*"
+    />
+    <title>Full Editor</title>
+    <style>
+      html {
+        background: #f6f5f2;
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          background: #1a1a1d;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- macOS squircle-ish rounded rect with standard margin -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#232327"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#sheen)"/>
+  <defs>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+  <!-- accent bracket -->
+  <path d="M 360 320 L 280 320 Q 250 320 250 350 L 250 674 Q 250 704 280 704 L 360 704"
+        fill="none" stroke="#4fae8f" stroke-width="52" stroke-linecap="round"/>
+  <!-- text lines -->
+  <line x1="450" y1="380" x2="774" y2="380" stroke="#f6f5f2" stroke-width="52" stroke-linecap="round"/>
+  <line x1="450" y1="512" x2="700" y2="512" stroke="#8b8b92" stroke-width="52" stroke-linecap="round"/>
+  <line x1="450" y1="644" x2="740" y2="644" stroke="#4fae8f" stroke-width="52" stroke-linecap="round"/>
+</svg>

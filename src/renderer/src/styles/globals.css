@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+
+/* Tailwind v4: make `dark:` respond to the .dark class (HeroUI reads data-theme). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Theme overrides — single continuous surface, hairline separators,
+ * tightened radius, desaturated viridian accent. Light = warm paper,
+ * dark = graphite.
+ */
+:root,
+[data-theme='light'] {
+  --radius: 0.375rem;
+  --background: oklch(0.9707 0.0035 95);
+  --foreground: oklch(0.235 0.008 280);
+  --muted: oklch(0.53 0.012 280);
+  --accent: oklch(0.56 0.105 168);
+  --accent-foreground: var(--snow);
+  --separator: oklch(0.905 0.005 95);
+  --border: oklch(0.885 0.006 95);
+  --surface: oklch(0.988 0.002 95);
+  --overlay: oklch(0.988 0.002 95);
+  --field-background: oklch(0.945 0.004 95);
+  --scrollbar: oklch(0.86 0.006 95);
+
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme='dark'] {
+  --background: oklch(0.2 0.005 270);
+  --foreground: oklch(0.92 0.004 270);
+  --muted: oklch(0.62 0.008 270);
+  --accent: oklch(0.76 0.09 168);
+  --accent-foreground: oklch(0.2 0.02 168);
+  --separator: oklch(0.27 0.005 270);
+  --border: oklch(0.3 0.006 270);
+  --surface: oklch(0.235 0.005 270);
+  --overlay: oklch(0.255 0.006 270);
+  --field-background: oklch(0.255 0.006 270);
+  --scrollbar: oklch(0.34 0.006 270);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* Window drag regions (titlebar / mini bar). */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Data rendered in the UI (sizes, paths, line/col) uses mono — the tool-like signature. */
+.data-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
