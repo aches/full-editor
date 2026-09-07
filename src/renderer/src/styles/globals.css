@@ -44,6 +44,52 @@
   --scrollbar: oklch(0.34 0.006 270);
 }
 
+/*
+ * Palette variants layered over the light/dark mode defaults.
+ * paper (light) and graphite (dark) ARE the defaults above.
+ */
+[data-palette='solarized-light'] {
+  --background: #fdf6e3;
+  --foreground: #586e75;
+  --muted: #93a1a1;
+  --accent: #268bd2;
+  --accent-foreground: #fdf6e3;
+  --separator: #ece5d1;
+  --border: #ddd6c1;
+  --surface: #f7f0dd;
+  --overlay: #fbf4e1;
+  --field-background: #f3ecd9;
+  --scrollbar: #d9d2bf;
+}
+
+[data-palette='one-dark'] {
+  --background: #282c34;
+  --foreground: #abb2bf;
+  --muted: #7f848e;
+  --accent: #61afef;
+  --accent-foreground: #282c34;
+  --separator: #34383f;
+  --border: #3e4451;
+  --surface: #2c313a;
+  --overlay: #333842;
+  --field-background: #333842;
+  --scrollbar: #4b5263;
+}
+
+[data-palette='dracula'] {
+  --background: #282a36;
+  --foreground: #f8f8f2;
+  --muted: #8b93b8;
+  --accent: #bd93f9;
+  --accent-foreground: #282a36;
+  --separator: #343747;
+  --border: #44475a;
+  --surface: #2e3140;
+  --overlay: #343746;
+  --field-background: #343746;
+  --scrollbar: #44475a;
+}
+
 html,
 body,
 #root {

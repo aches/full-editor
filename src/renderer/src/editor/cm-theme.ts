@@ -53,17 +53,28 @@ const baseTheme = EditorView.theme({
 })
 
 const highlight = HighlightStyle.define([
-  { tag: [t.keyword, t.modifier, t.operatorKeyword], color: 'var(--cm-keyword)' },
-  { tag: [t.string, t.special(t.string)], color: 'var(--cm-string)' },
-  { tag: [t.number, t.bool, t.null, t.atom], color: 'var(--cm-number)' },
-  { tag: [t.comment, t.lineComment, t.blockComment], color: 'var(--cm-comment)', fontStyle: 'italic' },
-  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: 'var(--cm-function)' },
-  { tag: [t.typeName, t.className, t.namespace], color: 'var(--cm-type)' },
-  { tag: [t.propertyName, t.attributeName, t.definition(t.variableName)], color: 'var(--cm-property)' },
+  { tag: [t.keyword, t.modifier, t.operatorKeyword, t.controlKeyword, t.moduleKeyword, t.self], color: 'var(--cm-keyword)' },
+  { tag: [t.string, t.special(t.string), t.attributeValue, t.character], color: 'var(--cm-string)' },
+  { tag: t.number, color: 'var(--cm-number)' },
+  {
+    tag: [t.bool, t.null, t.atom, t.constant(t.variableName), t.standard(t.variableName), t.unit],
+    color: 'var(--cm-constant)'
+  },
+  { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: 'var(--cm-comment)', fontStyle: 'italic' },
+  {
+    tag: [t.function(t.variableName), t.function(t.propertyName), t.macroName, t.labelName],
+    color: 'var(--cm-function)'
+  },
+  { tag: [t.typeName, t.className, t.namespace, t.annotation], color: 'var(--cm-type)' },
+  { tag: [t.propertyName, t.definition(t.variableName), t.definition(t.propertyName)], color: 'var(--cm-property)' },
+  { tag: t.attributeName, color: 'var(--cm-attribute)' },
   { tag: [t.tagName, t.angleBracket], color: 'var(--cm-tag)' },
-  { tag: [t.meta, t.processingInstruction, t.punctuation], color: 'var(--cm-meta)' },
+  { tag: [t.operator, t.compareOperator, t.arithmeticOperator, t.logicOperator, t.updateOperator], color: 'var(--cm-operator)' },
+  { tag: t.variableName, color: 'var(--cm-variable)' },
+  { tag: [t.meta, t.processingInstruction, t.punctuation, t.separator], color: 'var(--cm-meta)' },
   { tag: [t.link, t.url], color: 'var(--cm-link)', textDecoration: 'underline' },
   { tag: t.heading, color: 'var(--cm-heading)', fontWeight: '600' },
+  { tag: t.quote, color: 'var(--cm-comment)', fontStyle: 'italic' },
   { tag: t.emphasis, fontStyle: 'italic' },
   { tag: t.strong, fontWeight: '600' },
   { tag: t.strikethrough, textDecoration: 'line-through' },

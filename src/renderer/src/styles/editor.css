@@ -1,4 +1,4 @@
-/* CodeMirror sizing + syntax palette. Referenced from cm-theme.ts via var(). */
+/* CodeMirror sizing + syntax palettes. Referenced from cm-theme.ts via var(). */
 
 .editor-host,
 .editor-host .cm-editor {
@@ -9,57 +9,135 @@
   background: transparent;
 }
 
+/*
+ * Syntax palette contract (one full set per theme palette):
+ *   keyword string number constant comment function type property
+ *   attribute tag operator variable meta link heading regexp
+ * paper is based on One Light, graphite on brightened jewel tones,
+ * one-dark / dracula / solarized use their canonical colors.
+ */
+
+/* ---------- paper (light default) ---------- */
 :root,
 [data-theme='light'] {
   --cm-active-line: color-mix(in oklab, var(--foreground) 4%, transparent);
   --cm-gutter: oklch(0.7 0.008 95);
-  --cm-keyword: oklch(0.46 0.16 300);
-  --cm-string: oklch(0.47 0.09 168);
-  --cm-number: oklch(0.52 0.13 45);
-  --cm-comment: oklch(0.62 0.015 95);
-  --cm-function: oklch(0.46 0.13 250);
-  --cm-type: oklch(0.5 0.11 85);
-  --cm-property: oklch(0.44 0.1 220);
-  --cm-tag: oklch(0.5 0.14 20);
-  --cm-meta: oklch(0.55 0.02 280);
+  --cm-keyword: #a626a4;
+  --cm-string: #50a14f;
+  --cm-number: #986801;
+  --cm-constant: #b76b01;
+  --cm-comment: #a0a1a7;
+  --cm-function: #4078f2;
+  --cm-type: #c18401;
+  --cm-property: #e45649;
+  --cm-attribute: #986801;
+  --cm-tag: #e45649;
+  --cm-operator: #0184bc;
+  --cm-variable: #383a42;
+  --cm-meta: #a0a1a7;
   --cm-link: var(--accent);
   --cm-heading: var(--foreground);
-  --cm-regexp: oklch(0.5 0.13 130);
+  --cm-regexp: #0184bc;
 
-  --icon-folder: oklch(0.62 0.07 240);
-  --icon-doc: oklch(0.55 0.08 250);
-  --icon-config: oklch(0.6 0.1 75);
-  --icon-code: oklch(0.55 0.09 168);
-  --icon-markup: oklch(0.6 0.11 25);
-  --icon-shell: oklch(0.52 0.1 150);
-  --icon-data: oklch(0.55 0.1 300);
-  --icon-log: oklch(0.6 0.06 60);
-  --icon-media: oklch(0.58 0.11 330);
+  --icon-folder: oklch(0.62 0.09 240);
+  --icon-doc: oklch(0.55 0.1 250);
+  --icon-config: oklch(0.6 0.12 75);
+  --icon-code: oklch(0.55 0.11 168);
+  --icon-markup: oklch(0.6 0.13 25);
+  --icon-shell: oklch(0.52 0.12 150);
+  --icon-data: oklch(0.55 0.12 300);
+  --icon-log: oklch(0.6 0.08 60);
+  --icon-media: oklch(0.58 0.13 330);
 }
 
+/* ---------- graphite (dark default) ---------- */
 [data-theme='dark'] {
   --cm-active-line: color-mix(in oklab, var(--foreground) 5%, transparent);
   --cm-gutter: oklch(0.45 0.008 270);
-  --cm-keyword: oklch(0.75 0.12 305);
-  --cm-string: oklch(0.78 0.09 168);
-  --cm-number: oklch(0.78 0.11 60);
-  --cm-comment: oklch(0.55 0.015 270);
-  --cm-function: oklch(0.75 0.1 250);
-  --cm-type: oklch(0.8 0.1 90);
-  --cm-property: oklch(0.75 0.08 220);
-  --cm-tag: oklch(0.74 0.11 20);
-  --cm-meta: oklch(0.65 0.02 280);
-  --cm-regexp: oklch(0.75 0.1 130);
+  --cm-keyword: #cf9bf5;
+  --cm-string: #95d99b;
+  --cm-number: #f2a679;
+  --cm-constant: #6fd6e2;
+  --cm-comment: #71767f;
+  --cm-function: #7fb5ff;
+  --cm-type: #ecc48d;
+  --cm-property: #ef8b8b;
+  --cm-attribute: #f2a679;
+  --cm-tag: #ef8b8b;
+  --cm-operator: #6fd6e2;
+  --cm-variable: #d8dbe2;
+  --cm-meta: #8a8f98;
+  --cm-regexp: #95d99b;
 
-  --icon-folder: oklch(0.7 0.06 240);
-  --icon-doc: oklch(0.72 0.07 250);
-  --icon-config: oklch(0.75 0.09 75);
-  --icon-code: oklch(0.74 0.08 168);
-  --icon-markup: oklch(0.72 0.09 25);
-  --icon-shell: oklch(0.72 0.09 150);
-  --icon-data: oklch(0.72 0.08 300);
-  --icon-log: oklch(0.7 0.05 60);
-  --icon-media: oklch(0.72 0.09 330);
+  --icon-folder: oklch(0.7 0.08 240);
+  --icon-doc: oklch(0.72 0.09 250);
+  --icon-config: oklch(0.75 0.11 75);
+  --icon-code: oklch(0.74 0.1 168);
+  --icon-markup: oklch(0.72 0.11 25);
+  --icon-shell: oklch(0.72 0.11 150);
+  --icon-data: oklch(0.72 0.1 300);
+  --icon-log: oklch(0.7 0.07 60);
+  --icon-media: oklch(0.72 0.11 330);
+}
+
+/* ---------- solarized light ---------- */
+[data-palette='solarized-light'] {
+  --cm-active-line: rgba(88, 110, 117, 0.06);
+  --cm-gutter: #b5aa8f;
+  --cm-keyword: #859900;
+  --cm-string: #2aa198;
+  --cm-number: #d33682;
+  --cm-constant: #cb4b16;
+  --cm-comment: #93a1a1;
+  --cm-function: #268bd2;
+  --cm-type: #b58900;
+  --cm-property: #268bd2;
+  --cm-attribute: #b58900;
+  --cm-tag: #268bd2;
+  --cm-operator: #859900;
+  --cm-variable: #586e75;
+  --cm-meta: #93a1a1;
+  --cm-regexp: #dc322f;
+}
+
+/* ---------- one dark ---------- */
+[data-palette='one-dark'] {
+  --cm-active-line: rgba(171, 178, 191, 0.06);
+  --cm-gutter: #4b5263;
+  --cm-keyword: #c678dd;
+  --cm-string: #98c379;
+  --cm-number: #d19a66;
+  --cm-constant: #56b6c2;
+  --cm-comment: #5c6370;
+  --cm-function: #61afef;
+  --cm-type: #e5c07b;
+  --cm-property: #e06c75;
+  --cm-attribute: #d19a66;
+  --cm-tag: #e06c75;
+  --cm-operator: #56b6c2;
+  --cm-variable: #abb2bf;
+  --cm-meta: #828997;
+  --cm-regexp: #56b6c2;
+}
+
+/* ---------- dracula ---------- */
+[data-palette='dracula'] {
+  --cm-active-line: rgba(248, 248, 242, 0.05);
+  --cm-gutter: #565971;
+  --cm-keyword: #ff79c6;
+  --cm-string: #f1fa8c;
+  --cm-number: #bd93f9;
+  --cm-constant: #bd93f9;
+  --cm-comment: #6272a4;
+  --cm-function: #50fa7b;
+  --cm-type: #8be9fd;
+  --cm-property: #8be9fd;
+  --cm-attribute: #50fa7b;
+  --cm-tag: #ff79c6;
+  --cm-operator: #ff79c6;
+  --cm-variable: #f8f8f2;
+  --cm-meta: #6272a4;
+  --cm-regexp: #f1fa8c;
 }
 
 /* Log file semantics */

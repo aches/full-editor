@@ -1,4 +1,4 @@
-import type { EditorState } from '@codemirror/state'
+import type { EditorState, StateEffect } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 import type { LanguageId } from '@shared/file-kinds'
 import { applyLanguageToState, buildEditorState, languageComp } from './cm-base'
@@ -13,6 +13,8 @@ export interface DocEntry {
   savedDoc: string
   language: LanguageId
   readOnly: boolean
+  /** Captured on tab switch-away; EditorState does not carry scroll position. */
+  scrollEffect: StateEffect<unknown> | null
 }
 
 const docs = new Map<string, DocEntry>()
@@ -47,7 +49,8 @@ export function seedDoc(tabId: string, content: string, language: LanguageId, re
     state: buildEditorState(content, language, readOnly),
     savedDoc: content,
     language,
-    readOnly
+    readOnly,
+    scrollEffect: null
   })
 }
 
@@ -62,6 +65,18 @@ export function putState(tabId: string, state: EditorState): void {
 
 export function currentDoc(tabId: string): string {
   return docs.get(tabId)?.state.doc.toString() ?? ''
+}
+
+/** Snapshot the live view's scroll position into the tab's registry entry. */
+export function saveScrollSnapshot(tabId: string, view: EditorView): void {
+  const entry = docs.get(tabId)
+  if (entry) entry.scrollEffect = view.scrollSnapshot()
+}
+
+/** Re-apply a previously saved scroll position (no-op when none saved). */
+export function restoreScroll(tabId: string, view: EditorView): void {
+  const entry = docs.get(tabId)
+  if (entry?.scrollEffect) view.dispatch({ effects: entry.scrollEffect })
 }
 
 export function markSaved(tabId: string, content: string): void {

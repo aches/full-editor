@@ -49,7 +49,7 @@ export interface IpcInvokeMap {
   'window:setAlwaysOnTop': (on: boolean) => boolean
   'window:setMiniMode': (on: boolean) => MiniModeResult
   'window:getState': () => WindowStateSnapshot
-  'window:setThemePref': (pref: ThemePref) => void
+  'window:setThemePref': (pref: ThemePref, palette: string) => void
 }
 
 export type IpcChannel = keyof IpcInvokeMap

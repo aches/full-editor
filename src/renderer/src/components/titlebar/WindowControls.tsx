@@ -1,12 +1,26 @@
-import { Button, Dropdown, Label, Popover, Slider, ToggleButton, Tooltip } from '@heroui/react'
+import { Button, Dropdown, Label, Popover, Separator, Slider, ToggleButton, Tooltip } from '@heroui/react'
 import { Blend, Check, Monitor, Moon, PictureInPicture2, Pin, Sun } from 'lucide-react'
-import type { ThemePref } from '@shared/types'
+import { PALETTES } from '@/lib/themes'
 import { useStore } from '@/stores'
+
+function PaletteSwatch({ bg, accent }: { bg: string; accent: string }): React.ReactElement {
+  return (
+    <span
+      className="flex size-3.5 shrink-0 items-center justify-center rounded-full border border-(--border)"
+      style={{ background: bg }}
+    >
+      <span className="size-1.5 rounded-full" style={{ background: accent }} />
+    </span>
+  )
+}
 
 export default function WindowControls(): React.ReactElement {
   const opacity = useStore((s) => s.opacity)
   const pinned = useStore((s) => s.pinned)
   const themePref = useStore((s) => s.themePref)
+  const palette = useStore((s) => s.palette)
+  const selection = themePref === 'system' || palette === 'auto' ? 'system' : palette
+  const dark = useStore((s) => (s.themePref === 'system' ? s.systemDark : s.themePref === 'dark'))
 
   return (
     <div className="app-no-drag flex items-center gap-0.5">
@@ -72,22 +86,31 @@ export default function WindowControls(): React.ReactElement {
 
       <Dropdown>
         <Button isIconOnly aria-label="Theme" size="sm" variant="ghost">
-          {themePref === 'light' ? (
-            <Sun className="size-4" />
-          ) : themePref === 'dark' ? (
+          {selection === 'system' ? (
+            <Monitor className="size-4" />
+          ) : dark ? (
             <Moon className="size-4" />
           ) : (
-            <Monitor className="size-4" />
+            <Sun className="size-4" />
           )}
         </Button>
-        <Dropdown.Popover className="min-w-36">
-          <Dropdown.Menu onAction={(key) => void useStore.getState().setThemePref(String(key) as ThemePref)}>
-            {(['light', 'dark', 'system'] as const).map((pref) => (
-              <Dropdown.Item key={pref} id={pref} textValue={pref}>
-                <Label className="capitalize">{pref}</Label>
-                {themePref === pref && <Check className="ms-auto size-4 text-(--accent)" />}
+        <Dropdown.Popover className="min-w-48">
+          <Dropdown.Menu onAction={(key) => void useStore.getState().setTheme(String(key))}>
+            <>
+              <Dropdown.Item id="system" textValue="System">
+                <Monitor className="size-3.5 shrink-0 text-(--muted)" />
+                <Label>System</Label>
+                {selection === 'system' && <Check className="ms-auto size-4 text-(--accent)" />}
               </Dropdown.Item>
-            ))}
+              <Separator />
+              {PALETTES.map((p) => (
+                <Dropdown.Item key={p.id} id={p.id} textValue={p.label}>
+                  <PaletteSwatch accent={p.accent} bg={p.swatch} />
+                  <Label>{p.label}</Label>
+                  {selection === p.id && <Check className="ms-auto size-4 text-(--accent)" />}
+                </Dropdown.Item>
+              ))}
+            </>
           </Dropdown.Menu>
         </Dropdown.Popover>
       </Dropdown>

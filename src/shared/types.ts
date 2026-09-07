@@ -81,6 +81,8 @@ export interface WindowStateSnapshot {
   pinned: boolean
   miniMode: boolean
   themePref: ThemePref
+  /** Color palette id, or 'auto' for the mode's default palette. */
+  palette: string
   systemDark: boolean
 }
 

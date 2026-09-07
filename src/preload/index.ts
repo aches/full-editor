@@ -54,7 +54,7 @@ const api = {
     setAlwaysOnTop: (on: boolean) => invoke('window:setAlwaysOnTop', on),
     setMiniMode: (on: boolean) => invoke('window:setMiniMode', on),
     getState: () => invoke('window:getState'),
-    setThemePref: (pref: ThemePref) => invoke('window:setThemePref', pref)
+    setThemePref: (pref: ThemePref, palette: string) => invoke('window:setThemePref', pref, palette)
   },
   events: {
     onSystemThemeChanged: subscribe<boolean>('evt:systemThemeChanged'),

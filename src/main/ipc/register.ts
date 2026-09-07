@@ -74,9 +74,10 @@ export function registerIpcHandlers(): void {
   handle('window:setAlwaysOnTop', (on) => setAlwaysOnTop(on))
   handle('window:setMiniMode', (on) => setMiniMode(on))
   handle('window:getState', () => stateSnapshot())
-  handle('window:setThemePref', (pref) => {
+  handle('window:setThemePref', (pref, palette) => {
     updateWindowState((s) => {
       s.themePref = pref
+      s.palette = palette
     })
   })
 }

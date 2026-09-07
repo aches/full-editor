@@ -10,6 +10,7 @@ interface WindowStateFile {
   opacity: number
   pinned: boolean
   themePref: ThemePref
+  palette: string
 }
 
 let store: JsonStore<WindowStateFile> | null = null
@@ -21,7 +22,8 @@ function ensure(): JsonStore<WindowStateFile> {
       normalBounds: null,
       opacity: 1,
       pinned: false,
-      themePref: 'system'
+      themePref: 'system',
+      palette: 'auto'
     }))
   }
   return store

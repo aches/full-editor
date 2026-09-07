@@ -8,6 +8,8 @@ import {
   getDoc,
   notifyDocChanged,
   putState,
+  restoreScroll,
+  saveScrollSnapshot,
   setActiveDocTabId,
   setLiveView,
   syncLanguageToView
@@ -20,6 +22,7 @@ import {
 export default function EditorHost({ tabId }: { tabId: string }): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const shownTabRef = useRef<string | null>(null)
   const pendingGoto = useStore((s) => s.pendingGoto)
 
   useEffect(() => {
@@ -38,6 +41,8 @@ export default function EditorHost({ tabId }: { tabId: string }): React.ReactEle
       }
     }
     return () => {
+      // Keep the scroll position across unmounts (mini mode, viewer swaps).
+      if (shownTabRef.current) saveScrollSnapshot(shownTabRef.current, view)
       editorHooks.onDocChanged = () => {}
       setActiveDocTabId(null)
       setLiveView(null)
@@ -50,8 +55,14 @@ export default function EditorHost({ tabId }: { tabId: string }): React.ReactEle
     const view = viewRef.current
     const entry = getDoc(tabId)
     if (!view || !entry) return
+    // The view still shows the outgoing tab here — capture its scroll first.
+    if (shownTabRef.current && shownTabRef.current !== tabId) {
+      saveScrollSnapshot(shownTabRef.current, view)
+    }
+    shownTabRef.current = tabId
     setActiveDocTabId(tabId)
     view.setState(entry.state)
+    restoreScroll(tabId, view)
     view.focus()
     void syncLanguageToView(tabId, view)
   }, [tabId])

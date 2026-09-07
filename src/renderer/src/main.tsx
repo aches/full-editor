@@ -14,10 +14,11 @@ async function bootstrap(): Promise<void> {
   try {
     const state = await window.api.window.getState()
     const dark = state.themePref === 'system' ? state.systemDark : state.themePref === 'dark'
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-    document.documentElement.classList.toggle('dark', dark)
+    const { applyThemeToDom } = await import('./stores/ui.slice')
+    applyThemeToDom(dark, state.palette)
   } catch {
     document.documentElement.dataset.theme = 'light'
+    document.documentElement.dataset.palette = 'paper'
   }
 
   createRoot(document.getElementById('root')!).render(

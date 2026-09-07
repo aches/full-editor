@@ -163,6 +163,7 @@ export function stateSnapshot(): WindowStateSnapshot {
     pinned: ctx?.miniMode ? ctx.prevPinned : (ctx?.win.isAlwaysOnTop() ?? s.pinned),
     miniMode: ctx?.miniMode ?? false,
     themePref: s.themePref,
+    palette: s.palette,
     systemDark: nativeTheme.shouldUseDarkColors
   }
 }

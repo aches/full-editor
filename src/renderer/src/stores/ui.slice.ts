@@ -1,15 +1,20 @@
 import type { StateCreator } from 'zustand'
 import type { ThemePref } from '@shared/types'
+import { paletteById, resolvePalette } from '@/lib/themes'
 import type { AppStore } from './index'
 
 export type MdViewMode = 'edit' | 'split' | 'preview'
 export type SidebarMode = 'files' | 'search'
+
+/** 'system' or a palette id from lib/themes. */
+export type ThemeSelection = string
 
 export interface UiSlice {
   miniMode: boolean
   opacity: number
   pinned: boolean
   themePref: ThemePref
+  palette: string
   systemDark: boolean
   sidebarWidth: number
   mdViewByTab: Record<string, MdViewMode>
@@ -18,12 +23,13 @@ export interface UiSlice {
   searchFocusNonce: number
 
   resolvedDark: () => boolean
+  themeSelection: () => ThemeSelection
   initWindowState: () => Promise<void>
   setOpacity: (value: number) => Promise<void>
   togglePinned: () => Promise<void>
   toggleMini: () => Promise<void>
   applyMiniMode: (on: boolean) => void
-  setThemePref: (pref: ThemePref) => Promise<void>
+  setTheme: (selection: ThemeSelection) => Promise<void>
   setSystemDark: (dark: boolean) => void
   setSidebarWidth: (width: number) => void
   setMdView: (tabId: string, mode: MdViewMode) => void
@@ -32,9 +38,10 @@ export interface UiSlice {
   focusSearch: () => void
 }
 
-function applyThemeToDom(dark: boolean): void {
+export function applyThemeToDom(dark: boolean, palette: string): void {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   document.documentElement.classList.toggle('dark', dark)
+  document.documentElement.dataset.palette = resolvePalette(palette, dark)
 }
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
@@ -42,6 +49,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   opacity: 1,
   pinned: false,
   themePref: 'system',
+  palette: 'auto',
   systemDark: false,
   sidebarWidth: 260,
   mdViewByTab: {},
@@ -54,6 +62,11 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     return themePref === 'system' ? systemDark : themePref === 'dark'
   },
 
+  themeSelection: () => {
+    const { themePref, palette } = get()
+    return themePref === 'system' || palette === 'auto' ? 'system' : palette
+  },
+
   initWindowState: async () => {
     const s = await window.api.window.getState()
     set({
@@ -61,9 +74,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       opacity: s.opacity,
       pinned: s.pinned,
       themePref: s.themePref,
+      palette: s.palette,
       systemDark: s.systemDark
     })
-    applyThemeToDom(get().resolvedDark())
+    applyThemeToDom(get().resolvedDark(), get().palette)
   },
 
   setOpacity: async (value) => {
@@ -83,15 +97,21 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   applyMiniMode: (on) => set({ miniMode: on }),
 
-  setThemePref: async (pref) => {
-    set({ themePref: pref })
-    applyThemeToDom(get().resolvedDark())
-    await window.api.window.setThemePref(pref)
+  setTheme: async (selection) => {
+    if (selection === 'system') {
+      set({ themePref: 'system', palette: 'auto' })
+    } else {
+      const def = paletteById(selection)
+      if (!def) return
+      set({ themePref: def.mode, palette: def.id })
+    }
+    applyThemeToDom(get().resolvedDark(), get().palette)
+    await window.api.window.setThemePref(get().themePref, get().palette)
   },
 
   setSystemDark: (dark) => {
     set({ systemDark: dark })
-    applyThemeToDom(get().resolvedDark())
+    applyThemeToDom(get().resolvedDark(), get().palette)
   },
 
   setSidebarWidth: (width) => set({ sidebarWidth: Math.min(420, Math.max(200, width)) }),
