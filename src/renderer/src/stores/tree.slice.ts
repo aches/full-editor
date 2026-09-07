@@ -32,6 +32,9 @@ export interface TreeSlice {
   resetTree: () => void
   pruneTreeForRemovedRoot: () => void
   setSelectedPath: (path: string | null) => void
+  /** Where a quick-created file would land, based on the tree selection. */
+  quickCreateTargetDir: () => string | null
+  quickCreateToday: (ext: 'md' | 'txt') => Promise<void>
   setFsModal: (modal: FsModalState | null) => void
   setConfirmTrash: (confirm: ConfirmTrashState | null) => void
   submitFsModal: (name: string) => Promise<void>
@@ -120,6 +123,46 @@ export const createTreeSlice: StateCreator<AppStore, [], [], TreeSlice> = (set, 
   },
 
   setSelectedPath: (path) => set({ selectedPath: path }),
+
+  quickCreateTargetDir: () => {
+    const { selectedPath, childrenByDir } = get()
+    const active = get().activeProject()
+    if (!active || active.roots.length === 0) return null
+    const isRoot = (p: string): boolean => active.roots.some((r) => r.path === p)
+    if (selectedPath) {
+      // A loaded dir or a root is selectable as-is; otherwise look the entry
+      // up in its parent's listing to tell files from unloaded dirs.
+      if (childrenByDir[selectedPath] || isRoot(selectedPath)) return selectedPath
+      const parent = dirname(selectedPath)
+      const entry = childrenByDir[parent]?.find((e) => e.path === selectedPath)
+      if (entry) {
+        return entry.kind === 'dir' || entry.kind === 'symlink-dir' ? selectedPath : parent
+      }
+      return parent
+    }
+    return active.roots[0].path
+  },
+
+  quickCreateToday: async (ext) => {
+    const dir = get().quickCreateTargetDir()
+    if (!dir) return
+    const now = new Date()
+    const name = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate()
+    ).padStart(2, '0')}.${ext}`
+    const target = `${dir}/${name}`
+    const res = await window.api.fs.createFile(dir, name)
+    if (!res.ok && res.code !== 'EEXIST') {
+      toast('Could not create file', { description: res.message, variant: 'danger' })
+      return
+    }
+    // Fresh file or today's existing note — either way, show it.
+    set((s) => ({ expanded: { ...s.expanded, [dir]: true } }))
+    await get().loadDir(dir)
+    await get().openFile(target, name)
+    get().setSelectedPath(target)
+  },
+
   setFsModal: (modal) => set({ fsModal: modal }),
   setConfirmTrash: (confirm) => set({ confirmTrash: confirm }),
 

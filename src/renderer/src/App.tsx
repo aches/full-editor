@@ -8,6 +8,7 @@ import TabStrip from '@/components/tabs/TabStrip'
 import ViewerSwitch from '@/components/viewers/ViewerSwitch'
 import MiniBar from '@/components/mini/MiniBar'
 import { NoTabState } from '@/components/common/EmptyState'
+import QuickOpen from '@/components/common/QuickOpen'
 import {
   CloseDirtyTabDialog,
   DeleteProjectDialog,
@@ -116,6 +117,7 @@ export default function App(): React.ReactElement {
       <CloseDirtyTabDialog />
       <FsNameModal />
       <TrashConfirmDialog />
+      <QuickOpen />
       <Toast.Provider />
     </>
   )

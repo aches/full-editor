@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { SearchFileResult, SearchMatch, SearchRequest, SearchResponse } from '@shared/types'
 import { isPathAllowed } from './fs-service'
 
-const SKIP_DIRS = new Set([
+export const SKIP_DIRS = new Set([
   'node_modules',
   '.git',
   '.hg',

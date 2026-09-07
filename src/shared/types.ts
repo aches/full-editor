@@ -67,6 +67,19 @@ export interface SearchResponse {
   error?: string
 }
 
+export interface QuickOpenEntry {
+  path: string
+  name: string
+  /** Display path: "<root basename>/relative/dir". */
+  dir: string
+}
+
+export interface QuickOpenResponse {
+  entries: QuickOpenEntry[]
+  indexSize: number
+  truncated: boolean
+}
+
 export interface FsChangedPayload {
   /** Parent directories that had entries added/removed/renamed. */
   dirs: string[]

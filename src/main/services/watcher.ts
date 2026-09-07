@@ -2,6 +2,7 @@ import { watch, type FSWatcher } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { BrowserWindow } from 'electron'
 import type { FsChangedPayload } from '@shared/types'
+import { invalidateFileIndex } from './file-index'
 
 const FLUSH_MS = 300
 const MAX_BATCH = 200
@@ -14,6 +15,7 @@ let flushTimer: NodeJS.Timeout | null = null
 
 function flush(): void {
   flushTimer = null
+  invalidateFileIndex()
   if (!targetWin || targetWin.isDestroyed()) return
   if (pendingDirs.size === 0 && pendingFiles.size === 0) return
   const payload: FsChangedPayload = {

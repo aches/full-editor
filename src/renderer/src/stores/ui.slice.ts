@@ -21,6 +21,7 @@ export interface UiSlice {
   svgPreviewByTab: Record<string, boolean>
   sidebarMode: SidebarMode
   searchFocusNonce: number
+  quickOpenVisible: boolean
 
   resolvedDark: () => boolean
   themeSelection: () => ThemeSelection
@@ -36,6 +37,7 @@ export interface UiSlice {
   setSvgPreview: (tabId: string, on: boolean) => void
   setSidebarMode: (mode: SidebarMode) => void
   focusSearch: () => void
+  setQuickOpenVisible: (visible: boolean) => void
 }
 
 export function applyThemeToDom(dark: boolean, palette: string): void {
@@ -56,6 +58,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   svgPreviewByTab: {},
   sidebarMode: 'files',
   searchFocusNonce: 0,
+  quickOpenVisible: false,
 
   resolvedDark: () => {
     const { themePref, systemDark } = get()
@@ -125,5 +128,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   setSidebarMode: (mode) => set({ sidebarMode: mode }),
 
   focusSearch: () =>
-    set((s) => ({ sidebarMode: 'search', searchFocusNonce: s.searchFocusNonce + 1 }))
+    set((s) => ({ sidebarMode: 'search', searchFocusNonce: s.searchFocusNonce + 1 })),
+
+  setQuickOpenVisible: (visible) => set({ quickOpenVisible: visible })
 })

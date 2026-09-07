@@ -12,6 +12,7 @@ import {
   writeTextFile
 } from '../services/fs-service'
 import { runSearch } from '../services/search'
+import { quickOpenSearch } from '../services/file-index'
 import { setWatchRoots } from '../services/watcher'
 import {
   addRoots,
@@ -46,6 +47,7 @@ export function registerIpcHandlers(): void {
   handle('shell:openExternal', (url) => openExternalUrl(url))
 
   handle('search:run', (req) => runSearch(req))
+  handle('search:files', (roots, query) => quickOpenSearch(roots, query))
 
   handle('watch:setRoots', (paths) => {
     const win = mainWindow()

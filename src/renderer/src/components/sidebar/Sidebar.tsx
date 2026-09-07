@@ -1,9 +1,52 @@
-import { Button, Tooltip } from '@heroui/react'
-import { FolderPlus, FolderTree, RotateCw, Search } from 'lucide-react'
+import { Button, Dropdown, Header, Label, Tooltip } from '@heroui/react'
+import { CalendarPlus, FileText, FileType, FolderPlus, FolderTree, RotateCw, Search } from 'lucide-react'
 import { useStore } from '@/stores'
+import { prettyPath } from '@/lib/paths'
 import FileTree from '../tree/FileTree'
 import SearchPanel from './SearchPanel'
 import { NoProjectState, NoRootsState } from '../common/EmptyState'
+
+function todayName(ext: string): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}.${ext}`
+}
+
+/** One-click daily note: creates (or reopens) today's file in the selected folder. */
+function QuickCreateMenu(): React.ReactElement {
+  const targetDir = useStore((s) => s.quickCreateTargetDir())
+
+  return (
+    <Dropdown>
+      <Tooltip delay={500}>
+        <Button isIconOnly aria-label="New daily note" size="sm" variant="ghost">
+          <CalendarPlus className="size-4" />
+        </Button>
+        <Tooltip.Content>New daily note</Tooltip.Content>
+      </Tooltip>
+      <Dropdown.Popover className="min-w-56">
+        <Dropdown.Menu
+          onAction={(key) => void useStore.getState().quickCreateToday(key === 'md' ? 'md' : 'txt')}
+        >
+          <Dropdown.Section>
+            <Header className="data-mono max-w-52 truncate" title={targetDir ?? ''}>
+              in {targetDir ? prettyPath(targetDir) : '—'}
+            </Header>
+            <Dropdown.Item id="md" textValue={todayName('md')}>
+              <FileText className="size-4 shrink-0 text-(--icon-doc)" />
+              <Label>{todayName('md')}</Label>
+            </Dropdown.Item>
+            <Dropdown.Item id="txt" textValue={todayName('txt')}>
+              <FileType className="size-4 shrink-0 text-(--muted)" />
+              <Label>{todayName('txt')}</Label>
+            </Dropdown.Item>
+          </Dropdown.Section>
+        </Dropdown.Menu>
+      </Dropdown.Popover>
+    </Dropdown>
+  )
+}
 
 function HeaderIcon({
   label,
@@ -39,6 +82,7 @@ export default function Sidebar(): React.ReactElement {
           <span className="flex items-center">
             {mode === 'files' ? (
               <>
+                {active.roots.length > 0 && <QuickCreateMenu />}
                 <HeaderIcon
                   icon={<Search className="size-4" />}
                   label="Find in project (⌘⇧F)"

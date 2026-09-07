@@ -23,6 +23,9 @@ export function useWindowEvents(): void {
     const offOpenSearch = window.api.events.onOpenSearch(() => {
       useStore.getState().focusSearch()
     })
+    const offOpenQuickOpen = window.api.events.onOpenQuickOpen(() => {
+      useStore.getState().setQuickOpenVisible(true)
+    })
 
     const onKeyDown = (e: KeyboardEvent): void => {
       // ⌘1..9 — activate the Nth tab.
@@ -44,6 +47,7 @@ export function useWindowEvents(): void {
       offClose()
       offFsChanged()
       offOpenSearch()
+      offOpenQuickOpen()
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [])

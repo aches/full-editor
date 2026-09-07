@@ -45,6 +45,8 @@ export function NoTabState(): React.ReactElement {
     <div className="flex h-full flex-col items-center justify-center gap-5">
       <p className="text-sm text-(--muted)">Select a file from the tree to open it</p>
       <div className="space-y-2">
+        <ShortcutHint keys={['⌘', 'P']} label="Open file by name" />
+        <ShortcutHint keys={['⌘', '⇧', 'F']} label="Find in project" />
         <ShortcutHint keys={['⌘', 'S']} label="Save file" />
         <ShortcutHint keys={['⌘', 'W']} label="Close tab" />
         <ShortcutHint keys={['⌘', '⇧', 'M']} label="Mini mode" />

@@ -6,6 +6,7 @@ import type {
   MiniModeResult,
   Project,
   ProjectStoreSnapshot,
+  QuickOpenResponse,
   RenameResult,
   SearchRequest,
   SearchResponse,
@@ -32,6 +33,7 @@ export interface IpcInvokeMap {
   'shell:openExternal': (url: string) => void
 
   'search:run': (req: SearchRequest) => SearchResponse
+  'search:files': (roots: string[], query: string) => QuickOpenResponse
 
   'watch:setRoots': (paths: string[]) => void
 
@@ -62,6 +64,7 @@ export interface IpcEventMap {
   'evt:closeActiveTab': () => void
   'evt:fsChanged': (payload: FsChangedPayload) => void
   'evt:openSearch': () => void
+  'evt:openQuickOpen': () => void
 }
 
 export type IpcEventChannel = keyof IpcEventMap

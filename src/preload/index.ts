@@ -32,7 +32,8 @@ const api = {
     openExternal: (url: string) => invoke('shell:openExternal', url)
   },
   search: {
-    run: (req: SearchRequest) => invoke('search:run', req)
+    run: (req: SearchRequest) => invoke('search:run', req),
+    files: (roots: string[], query: string) => invoke('search:files', roots, query)
   },
   watch: {
     setRoots: (paths: string[]) => invoke('watch:setRoots', paths)
@@ -62,7 +63,8 @@ const api = {
     onSaveActiveTab: subscribe<void>('evt:saveActiveTab'),
     onCloseActiveTab: subscribe<void>('evt:closeActiveTab'),
     onFsChanged: subscribe<FsChangedPayload>('evt:fsChanged'),
-    onOpenSearch: subscribe<void>('evt:openSearch')
+    onOpenSearch: subscribe<void>('evt:openSearch'),
+    onOpenQuickOpen: subscribe<void>('evt:openQuickOpen')
   }
 }
 

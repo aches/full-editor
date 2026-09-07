@@ -24,6 +24,11 @@ export function installAppMenu(): void {
         },
         { type: 'separator' },
         {
+          label: 'Quick Open…',
+          accelerator: 'CmdOrCtrl+P',
+          click: () => mainWindow()?.webContents.send('evt:openQuickOpen')
+        },
+        {
           label: 'Find in Project',
           accelerator: 'CmdOrCtrl+Shift+F',
           click: () => mainWindow()?.webContents.send('evt:openSearch')
