@@ -1,7 +1,6 @@
 {
   "name": "full-editor",
   "version": "0.3.0",
-  "packageManager": "pnpm@12.4.2",
   "description": "Project-oriented editor for the file types real projects contain — markdown, shell, logs, yaml and more.",
   "author": "a",
   "repository": {
