@@ -6,6 +6,7 @@ import { editorHooks } from './cm-base'
 import {
   activeDocTabId,
   getDoc,
+  isDirtyNow,
   notifyDocChanged,
   putState,
   restoreScroll,
@@ -36,10 +37,17 @@ export default function EditorHost({ tabId }: { tabId: string }): React.ReactEle
       if (docChanged) {
         const store = useStore.getState()
         const tab = store.tabs.find((t) => t.id === id)
-        if (tab && !tab.dirty) store.markDirty(id, true)
+        const dirty = isDirtyNow(id)
+        if (tab && tab.dirty !== dirty) store.markDirty(id, dirty)
         notifyDocChanged(id)
       }
+      useStore.getState().scheduleSessionSave()
     }
+    const onScroll = (): void => {
+      if (activeDocTabId) saveScrollSnapshot(activeDocTabId, view)
+      useStore.getState().scheduleSessionSave()
+    }
+    view.scrollDOM.addEventListener('scroll', onScroll)
     return () => {
       // Keep the scroll position across unmounts (mini mode, viewer swaps).
       if (shownTabRef.current) saveScrollSnapshot(shownTabRef.current, view)
@@ -47,6 +55,7 @@ export default function EditorHost({ tabId }: { tabId: string }): React.ReactEle
       setActiveDocTabId(null)
       setLiveView(null)
       viewRef.current = null
+      view.scrollDOM.removeEventListener('scroll', onScroll)
       view.destroy()
     }
   }, [])

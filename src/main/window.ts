@@ -3,6 +3,9 @@ import { BrowserWindow, nativeTheme, screen, type Rectangle } from 'electron'
 import type { MiniModeResult, WindowStateSnapshot } from '@shared/types'
 import { clampOpacity, clampToDisplay, updateWindowState, windowState } from './window-state'
 
+import { installLifecycleGuard } from './lifecycle'
+import { attachOpenFilesWindow } from './services/open-files'
+
 const NORMAL_MIN = { width: 720, height: 480 }
 const MINI_SIZE = { width: 420, height: 300 }
 const MINI_MIN = { width: 320, height: 200 }
@@ -48,6 +51,8 @@ export function createMainWindow(): BrowserWindow {
     }
   })
 
+  installLifecycleGuard(win)
+  attachOpenFilesWindow(win)
   ctx = { win, miniMode: false, normalBounds: null, prevPinned: false, miniBounds: null, transitioning: false }
 
   win.once('ready-to-show', () => {

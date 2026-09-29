@@ -22,6 +22,7 @@ export interface UiSlice {
   sidebarMode: SidebarMode
   searchFocusNonce: number
   quickOpenVisible: boolean
+  exporting: boolean
 
   resolvedDark: () => boolean
   themeSelection: () => ThemeSelection
@@ -59,6 +60,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   sidebarMode: 'files',
   searchFocusNonce: 0,
   quickOpenVisible: false,
+  exporting: false,
 
   resolvedDark: () => {
     const { themePref, systemDark } = get()

@@ -1,7 +1,8 @@
 import type { EditorState, StateEffect } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 import type { LanguageId } from '@shared/file-kinds'
-import { applyLanguageToState, buildEditorState, languageComp } from './cm-base'
+import { EditorState as CMState } from '@codemirror/state'
+import { applyLanguageToState, buildEditorState, languageComp, readOnlyComp } from './cm-base'
 import { loadLanguage } from './languages'
 
 /**
@@ -15,6 +16,8 @@ export interface DocEntry {
   readOnly: boolean
   /** Captured on tab switch-away; EditorState does not carry scroll position. */
   scrollEffect: StateEffect<unknown> | null
+  scrollTop: number
+  scrollLeft: number
 }
 
 const docs = new Map<string, DocEntry>()
@@ -45,12 +48,15 @@ export function notifyDocChanged(tabId: string): void {
 }
 
 export function seedDoc(tabId: string, content: string, language: LanguageId, readOnly: boolean): void {
+  const state = buildEditorState(content, language, readOnly)
   docs.set(tabId, {
-    state: buildEditorState(content, language, readOnly),
-    savedDoc: content,
+    state,
+    savedDoc: state.doc.toString(),
     language,
     readOnly,
-    scrollEffect: null
+    scrollEffect: null,
+    scrollTop: 0,
+    scrollLeft: 0
   })
 }
 
@@ -70,13 +76,31 @@ export function currentDoc(tabId: string): string {
 /** Snapshot the live view's scroll position into the tab's registry entry. */
 export function saveScrollSnapshot(tabId: string, view: EditorView): void {
   const entry = docs.get(tabId)
-  if (entry) entry.scrollEffect = view.scrollSnapshot()
+  if (entry) {
+    entry.scrollEffect = view.scrollSnapshot()
+    entry.scrollTop = view.scrollDOM.scrollTop
+    entry.scrollLeft = view.scrollDOM.scrollLeft
+  }
 }
 
 /** Re-apply a previously saved scroll position (no-op when none saved). */
 export function restoreScroll(tabId: string, view: EditorView): void {
   const entry = docs.get(tabId)
   if (entry?.scrollEffect) view.dispatch({ effects: entry.scrollEffect })
+  else if (entry) {
+    const { scrollTop, scrollLeft } = entry
+    view.scrollDOM.scrollTop = scrollTop
+    view.scrollDOM.scrollLeft = scrollLeft
+    view.requestMeasure({
+      read: () => null,
+      write: () => {
+        if (activeDocTabId === tabId) {
+          view.scrollDOM.scrollTop = scrollTop
+          view.scrollDOM.scrollLeft = scrollLeft
+        }
+      }
+    })
+  }
 }
 
 export function markSaved(tabId: string, content: string): void {
@@ -95,6 +119,16 @@ export function dropDoc(tabId: string): void {
   if (activeDocTabId === tabId) activeDocTabId = null
 }
 
+/** Keep the active view and parked state consistent when disk size changes. */
+export function setDocReadOnly(tabId: string, readOnly: boolean): void {
+  const entry = docs.get(tabId)
+  if (!entry || entry.readOnly === readOnly) return
+  entry.readOnly = readOnly
+  const effects = readOnlyComp.reconfigure(CMState.readOnly.of(readOnly))
+  if (activeDocTabId === tabId && liveView) liveView.dispatch({ effects })
+  else entry.state = entry.state.update({ effects }).state
+}
+
 /**
  * Replace the whole document with fresh disk content (external change picked
  * up by the watcher). Marks the new content as the saved baseline.
@@ -111,7 +145,8 @@ export function replaceDocContent(tabId: string, content: string): void {
       changes: { from: 0, to: entry.state.doc.length, insert: content }
     }).state
   }
-  entry.savedDoc = content
+  entry.savedDoc = entry.state.doc.toString()
+  notifyDocChanged(tabId)
 }
 
 function languageMissingIn(state: EditorState): boolean {
@@ -130,9 +165,10 @@ function languageMissingIn(state: EditorState): boolean {
 export async function syncLanguageToView(tabId: string, view: EditorView): Promise<void> {
   const entry = docs.get(tabId)
   if (!entry || entry.language === 'plain' || !languageMissingIn(view.state)) return
-  const ext = await loadLanguage(entry.language)
+  const language = entry.language
+  const ext = await loadLanguage(language)
   if (!ext) return
-  if (activeDocTabId !== tabId || !languageMissingIn(view.state)) return
+  if (docs.get(tabId) !== entry || entry.language !== language || activeDocTabId !== tabId || !languageMissingIn(view.state)) return
   view.dispatch({ effects: languageComp.reconfigure(ext) })
   // Belt-and-braces for a dead-view dispatch: make sure the stored state
   // carries the language too.

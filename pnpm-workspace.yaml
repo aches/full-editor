@@ -1,0 +1,8 @@
+# Build-script approvals (pnpm >= 10.26 uses allowBuilds instead of
+# package.json "pnpm.onlyBuiltDependencies"). Electron's postinstall
+# downloads the Electron.app binary into node_modules/electron/dist; if it
+# is skipped, `electron-vite dev` fails with "Electron uninstall".
+allowBuilds:
+  electron: true
+  esbuild: true
+  electron-winstaller: false

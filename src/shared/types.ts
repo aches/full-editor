@@ -1,3 +1,5 @@
+import type { LanguageId } from './file-kinds'
+
 export interface ProjectRoot {
   id: string
   /** Absolute directory path on disk. */
@@ -27,7 +29,7 @@ export interface DirEntry {
 }
 
 export type FileOpenResult =
-  | { type: 'text'; content: string; size: number; readOnly: boolean }
+  | { type: 'text'; content: string; size: number; readOnly: boolean; revision: string }
   | { type: 'image'; url: string; size: number }
   | { type: 'binary'; size: number }
   | { type: 'too-large'; size: number; limit: number }
@@ -108,3 +110,54 @@ export const TEXT_SOFT_LIMIT = 1.5 * 1024 * 1024
 export const TEXT_HARD_LIMIT = 5 * 1024 * 1024
 
 export const MIN_OPACITY = 0.3
+
+export interface FileWriteRequest {
+  /** SHA-256 of the bytes last read; null means the destination must not exist. */
+  expectedRevision: string | null
+}
+
+export type FileWriteResult =
+  | { ok: true; revision: string; path: string }
+  | { ok: false; code: string; message: string }
+
+export interface SessionTab {
+  id: string
+  path: string
+  name: string
+  language: LanguageId
+  cursor: { anchor: number; head: number }
+  scrollTop: number
+  scrollLeft: number
+  mdView: 'edit' | 'split' | 'preview'
+  svgPreview: boolean
+  draft?: { content: string; savedContent: string; revision: string | null }
+}
+
+export interface ProjectSession {
+  version: 1
+  tabs: SessionTab[]
+  activeTabId: string | null
+  expanded: string[]
+  selectedPath: string | null
+  sidebarWidth: number
+}
+
+export interface CloseRequest {
+  id: number
+  reason: 'close' | 'quit' | 'reload'
+}
+
+export type ExportFormat = 'png' | 'pdf'
+
+export interface ExportRequest {
+  format: ExportFormat
+  sourcePath: string
+  /** Sanitized body markup only. */
+  html: string
+  css: string
+  forbiddenPaths: string[]
+}
+
+export type ExportResult =
+  | { ok: true; path: string }
+  | { ok: false; code: string; message: string }

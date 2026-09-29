@@ -2,6 +2,7 @@ import { Button, Tooltip } from '@heroui/react'
 import { Maximize2, Save } from 'lucide-react'
 import { useStore } from '@/stores'
 import type { TabMeta } from '@/stores/app-types'
+import ExportMenu from '@/components/viewers/ExportMenu'
 
 export default function MiniBar({ tab }: { tab: TabMeta | undefined }): React.ReactElement {
   return (
@@ -11,6 +12,7 @@ export default function MiniBar({ tab }: { tab: TabMeta | undefined }): React.Re
         <span className="truncate text-xs font-medium">{tab?.name ?? 'Full Editor'}</span>
       </span>
       <span className="app-no-drag flex shrink-0 items-center gap-0.5">
+        {tab && <ExportMenu tabId={tab.id} compact />}
         {tab?.viewer === 'editor' && !tab.readOnly && (
           <Tooltip delay={500}>
             <Button

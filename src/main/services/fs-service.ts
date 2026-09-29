@@ -1,10 +1,25 @@
+import { createHash } from 'node:crypto'
 import { promises as fsp } from 'node:fs'
-import { dirname, join, resolve, sep } from 'node:path'
-import { shell } from 'electron'
-import type { CreateResult, DirEntry, FileOpenResult, RenameResult, WriteResult } from '@shared/types'
+import { basename, dirname, join, resolve, sep } from 'node:path'
+import { dialog, shell } from 'electron'
+import type { CreateResult, DirEntry, FileOpenResult, FileWriteRequest, FileWriteResult, RenameResult, WriteResult } from '@shared/types'
 import { TEXT_HARD_LIMIT, TEXT_SOFT_LIMIT } from '@shared/types'
 import { isImageFile } from '@shared/file-kinds'
+import { localFileUrl } from '@shared/file-url'
 import { allRootPaths } from './project-store'
+import { atomicWrite, fileRevision, serializeWrite } from './atomic-write'
+import { grantFile, hasFileGrant } from './file-grants'
+import { mainWindow } from '../window'
+
+/** Resolve aliases consistently, including a deleted file whose parent still exists. */
+async function canonicalFilePath(path: string): Promise<string> {
+  try {
+    return await fsp.realpath(resolve(path))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    return join(await fsp.realpath(dirname(resolve(path))), basename(path))
+  }
+}
 
 /**
  * A path is accessible when its real location is inside (or is) one of the
@@ -14,10 +29,11 @@ import { allRootPaths } from './project-store'
 export async function isPathAllowed(target: string): Promise<boolean> {
   let real: string
   try {
-    real = await fsp.realpath(resolve(target))
+    real = await canonicalFilePath(target)
   } catch {
     return false
   }
+  if (hasFileGrant(real)) return true
   for (const root of allRootPaths()) {
     let rootReal: string
     try {
@@ -28,6 +44,17 @@ export async function isPathAllowed(target: string): Promise<boolean> {
     if (real === rootReal || real.startsWith(rootReal + sep)) return true
   }
   return false
+}
+
+/** Files the OS asks us to open (Finder, `open -a`) get an exact-file grant unless a project already covers them. */
+export async function grantOpenedFile(path: string): Promise<string | null> {
+  try {
+    if (!(await fsp.stat(path)).isFile()) return null
+    if (!(await isPathAllowed(path))) await grantFile(await canonicalFilePath(path))
+    return resolve(path)
+  } catch {
+    return null
+  }
 }
 
 export async function readDirSorted(dirPath: string): Promise<DirEntry[]> {
@@ -82,7 +109,7 @@ export async function openFile(filePath: string): Promise<FileOpenResult> {
     }
     const st = await fsp.stat(filePath)
     if (isImageFile(filePath)) {
-      return { type: 'image', url: `editor-file://local${encodeURI(resolve(filePath))}`, size: st.size }
+      return { type: 'image', url: localFileUrl(resolve(filePath)), size: st.size }
     }
     if (st.size > TEXT_HARD_LIMIT) {
       return { type: 'too-large', size: st.size, limit: TEXT_HARD_LIMIT }
@@ -91,7 +118,7 @@ export async function openFile(filePath: string): Promise<FileOpenResult> {
     if (looksBinary(buf)) {
       return { type: 'binary', size: st.size }
     }
-    return { type: 'text', content: buf.toString('utf8'), size: st.size, readOnly: st.size > TEXT_SOFT_LIMIT }
+    return { type: 'text', content: buf.toString('utf8'), size: st.size, readOnly: st.size > TEXT_SOFT_LIMIT, revision: createHash('sha256').update(buf).digest('hex') }
   } catch (err) {
     const e = err as NodeJS.ErrnoException
     const code = e.code === 'ENOENT' ? 'ENOENT' : e.code === 'EACCES' || e.code === 'EPERM' ? 'EACCES' : 'UNKNOWN'
@@ -99,16 +126,57 @@ export async function openFile(filePath: string): Promise<FileOpenResult> {
   }
 }
 
-export async function writeTextFile(filePath: string, content: string): Promise<WriteResult> {
+export async function writeTextFile(filePath: string, content: string, options: FileWriteRequest): Promise<FileWriteResult> {
   try {
-    if (!(await isPathAllowed(filePath))) {
-      return { ok: false, code: 'EACCES', message: 'File is outside the project roots.' }
+    if (!options || !(options.expectedRevision === null || typeof options.expectedRevision === 'string' && /^[a-f0-9]{64}$/.test(options.expectedRevision))) {
+      return { ok: false, code: 'EINVAL', message: 'Saving requires the revision of the last opened file.' }
     }
-    await fsp.writeFile(filePath, content, 'utf8')
-    return { ok: true }
+    if (!(await isPathAllowed(filePath))) {
+      return { ok: false, code: 'EACCES', message: 'File is outside the project roots and selected files.' }
+    }
+    const destination = await canonicalFilePath(filePath)
+    return await serializeWrite(destination, async () => {
+      const validateRevision = async (): Promise<void> => {
+        if (!(await isPathAllowed(destination))) throw Object.assign(new Error('File access changed. Please use Save As.'), { code: 'EACCES' })
+        if (await fileRevision(destination) !== options.expectedRevision) {
+          throw Object.assign(new Error('The file changed or was deleted on disk. Review the current version before saving, or use Save As.'), { code: 'CONFLICT' })
+        }
+      }
+      await validateRevision()
+      await atomicWrite(destination, content, validateRevision)
+      return { ok: true, revision: createHash('sha256').update(content, 'utf8').digest('hex'), path: resolve(filePath) }
+    })
   } catch (err) {
     const e = err as NodeJS.ErrnoException
     return { ok: false, code: e.code ?? 'UNKNOWN', message: e.message ?? String(err) }
+  }
+}
+
+export async function saveAs(sourcePath: string, content: string, forbiddenPaths: string[] = []): Promise<FileWriteResult> {
+  const win = mainWindow()
+  if (!win) return { ok: false, code: 'CANCELLED', message: 'No active window.' }
+  try {
+    const result = await dialog.showSaveDialog(win, { defaultPath: sourcePath, title: 'Save As', buttonLabel: 'Save' })
+    if (result.canceled || !result.filePath) return { ok: false, code: 'CANCELLED', message: 'Save As cancelled.' }
+    const destination = await canonicalFilePath(result.filePath)
+    for (const forbidden of forbiddenPaths) {
+      const canonical = await canonicalFilePath(forbidden).catch(() => resolve(forbidden))
+      if (canonical === destination) return { ok: false, code: 'ALREADY_OPEN', message: 'This destination is already open in another tab. Choose a different file.' }
+    }
+    const revision = await fileRevision(destination)
+    if (revision !== null) {
+      const overwrite = await dialog.showMessageBox(win, {
+        type: 'warning', title: 'Replace existing file?', message: `Replace “${basename(destination)}”?`,
+        detail: 'The file currently on disk will be replaced with this document. Changes made after this confirmation will stop the save.',
+        buttons: ['Cancel', 'Replace'], defaultId: 0, cancelId: 0, noLink: true
+      })
+      if (overwrite.response !== 1) return { ok: false, code: 'CANCELLED', message: 'Replacement cancelled.' }
+    }
+    await grantFile(destination)
+    return await writeTextFile(destination, content, { expectedRevision: revision })
+  } catch (error) {
+    const e = error as NodeJS.ErrnoException
+    return { ok: false, code: e.code ?? 'UNKNOWN', message: e.message ?? String(error) }
   }
 }
 

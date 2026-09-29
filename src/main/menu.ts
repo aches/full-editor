@@ -1,4 +1,6 @@
+import { requestClose } from './lifecycle'
 import { Menu, type MenuItemConstructorOptions } from 'electron'
+import { checkForUpdates } from './services/updater'
 import { isMiniMode, mainWindow, setMiniMode } from './window'
 
 /**
@@ -8,7 +10,21 @@ import { isMiniMode, mainWindow, setMiniMode } from './window'
  */
 export function installAppMenu(): void {
   const template: MenuItemConstructorOptions[] = [
-    { role: 'appMenu' },
+    {
+      label: 'Full Editor',
+      submenu: [
+        { role: 'about' },
+        { label: 'Check for Updates…', click: () => void checkForUpdates(true) },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
     {
       label: 'File',
       submenu: [
@@ -16,6 +32,23 @@ export function installAppMenu(): void {
           label: 'Save',
           accelerator: 'CmdOrCtrl+S',
           click: () => mainWindow()?.webContents.send('evt:saveActiveTab')
+        },
+        {
+          label: 'Save As…',
+          accelerator: 'CmdOrCtrl+Shift+S',
+          click: () => mainWindow()?.webContents.send('evt:saveAsActiveTab')
+        },
+        {
+          label: 'Save All',
+          accelerator: 'CmdOrCtrl+Alt+S',
+          click: () => mainWindow()?.webContents.send('evt:saveAllTabs')
+        },
+        {
+          label: 'Export',
+          submenu: [
+            { label: 'PNG Image…', click: () => mainWindow()?.webContents.send('evt:exportActiveTab', 'png') },
+            { label: 'PDF Document…', click: () => mainWindow()?.webContents.send('evt:exportActiveTab', 'pdf') }
+          ]
         },
         {
           label: 'Close Tab',
@@ -47,7 +80,7 @@ export function installAppMenu(): void {
           }
         },
         { type: 'separator' },
-        { role: 'reload' },
+        { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => requestClose('reload') },
         { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'togglefullscreen' }

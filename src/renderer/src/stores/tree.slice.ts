@@ -115,6 +115,7 @@ export const createTreeSlice: StateCreator<AppStore, [], [], TreeSlice> = (set, 
         Object.fromEntries(Object.entries(obj).filter(([k]) => within(k))) as Record<string, T>
       return {
         expanded: filterMap(s.expanded),
+        selectedPath: s.selectedPath && within(s.selectedPath) ? s.selectedPath : null,
         childrenByDir: filterMap(s.childrenByDir),
         loadingDirs: filterMap(s.loadingDirs),
         errorByDir: filterMap(s.errorByDir)
@@ -229,6 +230,9 @@ export const createTreeSlice: StateCreator<AppStore, [], [], TreeSlice> = (set, 
     }
     for (const file of payload.files) {
       void get().reloadCleanTabFromDisk(file)
+      for (const tab of get().tabs) {
+        if (tab.path.startsWith(file + '/')) void get().reloadCleanTabFromDisk(tab.path)
+      }
     }
   }
 })

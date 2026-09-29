@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Toast } from '@heroui/react'
+import { Button, Spinner, Toast } from '@heroui/react'
 import { useStore } from '@/stores'
 import { useWindowEvents } from '@/hooks/useWindowEvents'
 import TitleBar from '@/components/titlebar/TitleBar'
@@ -10,11 +10,11 @@ import MiniBar from '@/components/mini/MiniBar'
 import { NoTabState } from '@/components/common/EmptyState'
 import QuickOpen from '@/components/common/QuickOpen'
 import {
-  CloseDirtyTabDialog,
   DeleteProjectDialog,
   ProjectFormModal
 } from '@/components/modals/ProjectModals'
 import { FsNameModal, TrashConfirmDialog } from '@/components/modals/FsModals'
+import FileConflictDialog from '@/components/modals/FileConflictDialog'
 import './styles/editor.css'
 import './styles/markdown.css'
 
@@ -90,6 +90,10 @@ function MiniLayout(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   const miniMode = useStore((s) => s.miniMode)
+  const sessionReady = useStore((s) => s.sessionReady)
+  const transitionBusy = useStore((s) => s.transitionBusy)
+  const backupError = useStore((s) => s.backupError)
+  const backupUpdatedAt = useStore((s) => s.backupUpdatedAt)
   useWindowEvents()
 
   useEffect(() => {
@@ -99,7 +103,16 @@ export default function App(): React.ReactElement {
   }, [])
 
   return (
-    <>
+    <div className="flex h-full flex-col">
+      {!sessionReady && !transitionBusy ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
+          {backupError ? <>
+            <p className="font-medium">Workspace recovery needs attention</p>
+            <p className="max-w-xl break-all text-sm text-(--muted)">{backupError}</p>
+            <Button onPress={() => void useStore.getState().loadProjects()}>Retry Recovery</Button>
+          </> : <><Spinner size="sm" /><p className="text-sm text-(--muted)">Restoring workspace…</p></>}
+        </div>
+      ) : <div className="min-h-0 flex-1" inert={transitionBusy}>
       {miniMode ? (
         <MiniLayout />
       ) : (
@@ -114,11 +127,20 @@ export default function App(): React.ReactElement {
       )}
       <ProjectFormModal />
       <DeleteProjectDialog />
-      <CloseDirtyTabDialog />
       <FsNameModal />
       <TrashConfirmDialog />
       <QuickOpen />
+      </div>}
+      <FileConflictDialog />
+      {sessionReady && (backupError || backupUpdatedAt) && (
+        <div role={backupError ? 'alert' : 'status'} className={`flex min-h-6 shrink-0 items-center justify-between gap-3 border-t border-(--separator) px-3 py-1 text-[11px] ${backupError ? 'text-(--danger)' : 'text-(--muted)'}`}>
+          <span className="min-w-0 truncate" title={backupError ?? undefined}>
+            {backupError ? `Recovery backup failed: ${backupError}` : `Workspace backed up · ${new Date(backupUpdatedAt!).toLocaleTimeString()}`}
+          </span>
+          {backupError && <button className="shrink-0 underline" onClick={() => void useStore.getState().flushSession()}>Retry Backup</button>}
+        </div>
+      )}
       <Toast.Provider />
-    </>
+    </div>
   )
 }

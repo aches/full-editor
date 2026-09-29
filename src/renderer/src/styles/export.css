@@ -1,0 +1,40 @@
+/* Standalone content surface, shared by full-height PNG and paginated PDF output. */
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 0; height: auto; overflow: visible; }
+body {
+  padding: 36px 40px;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.md-root { max-width: 900px; margin: 0 auto; overflow-wrap: anywhere; }
+.md-root > :first-child { margin-top: 0; }
+.md-root > :last-child { margin-bottom: 0; }
+.md-root ul { list-style: disc; }
+.md-root ol { list-style: decimal; }
+.md-root pre { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; }
+.md-root table { table-layout: fixed; }
+.md-root th, .md-root td { overflow-wrap: anywhere; }
+.md-root thead { display: table-header-group; }
+.md-root img { height: auto; }
+.export-code { font-family: var(--font-mono); font-size: 13px; line-height: 1.65; }
+.export-line { position: relative; padding-left: 5.5ch; min-height: 1.65em; }
+.export-line code { white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; font: inherit; }
+.line-number { position: absolute; left: 0; width: 4ch; text-align: right; color: var(--cm-gutter); user-select: none; }
+.export-image { margin: 0; text-align: center; }
+.export-image img { display: inline-block; max-width: 100%; height: auto; vertical-align: top; }
+.export-fallback { padding: 64px 24px; text-align: center; overflow-wrap: anywhere; }
+.export-fallback h1 { font-size: 20px; }
+.export-fallback p { font-size: 14px; color: var(--muted); }
+@page { size: A4; margin: 14mm; }
+@media print {
+  body { padding: 0; }
+  .md-root { max-width: none; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  tr, img, .export-line { break-inside: avoid; }
+  .export-image img { max-height: 260mm; object-fit: contain; }
+}

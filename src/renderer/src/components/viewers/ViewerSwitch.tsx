@@ -1,4 +1,4 @@
-import { Chip, ToggleButton, ToggleButtonGroup } from '@heroui/react'
+import { Button, Chip, ToggleButton, ToggleButtonGroup, toast } from '@heroui/react'
 import { useStore } from '@/stores'
 import type { MdViewMode } from '@/stores/ui.slice'
 import type { TabMeta } from '@/stores/app-types'
@@ -10,6 +10,7 @@ import ImageViewer from './ImageViewer'
 import MarkdownPreview from './MarkdownPreview'
 import SvgPreview from './SvgPreview'
 import { BinaryState, ErrorState, TooLargeState } from './FallbackStates'
+import ExportMenu from './ExportMenu'
 
 function ViewerToolbar({
   tab,
@@ -30,7 +31,7 @@ function ViewerToolbar({
             Read-only · {formatBytes(tab.size)}
           </Chip>
         )}
-        {tab.language === 'markdown' && (
+        {tab.viewer === 'editor' && tab.language === 'markdown' && (
           <ToggleButtonGroup
             aria-label="Markdown mode"
             disallowEmptySelection
@@ -53,7 +54,7 @@ function ViewerToolbar({
             </ToggleButton>
           </ToggleButtonGroup>
         )}
-        {isSvg && (
+        {tab.viewer === 'editor' && isSvg && (
           <ToggleButtonGroup
             aria-label="SVG mode"
             disallowEmptySelection
@@ -72,6 +73,7 @@ function ViewerToolbar({
             </ToggleButton>
           </ToggleButtonGroup>
         )}
+        <ExportMenu tabId={tab.id} />
       </span>
     </div>
   )
@@ -84,16 +86,15 @@ export default function ViewerSwitch({ tab }: { tab: TabMeta }): React.ReactElem
   // Cheap cache-bust signal for the svg preview: changes when dirty flips off (save).
   const dirty = tab.dirty
 
-  if (tab.viewer === 'image') return <ImageViewer tab={tab} />
-  if (tab.viewer === 'binary') return <BinaryState tab={tab} />
-  if (tab.viewer === 'large') return <TooLargeState tab={tab} />
-  if (tab.viewer === 'error') return <ErrorState tab={tab} />
-
   const isSvg = extOf(tab.name) === 'svg'
   const isMd = tab.language === 'markdown'
 
   let body: React.ReactNode
-  if (isMd && mdView === 'preview') {
+  if (tab.viewer === 'image') body = <ImageViewer tab={tab} />
+  else if (tab.viewer === 'binary') body = <BinaryState tab={tab} />
+  else if (tab.viewer === 'large') body = <TooLargeState tab={tab} />
+  else if (tab.viewer === 'error') body = <ErrorState tab={tab} />
+  else if (isMd && mdView === 'preview') {
     body = <MarkdownPreview tabId={tab.id} />
   } else if (isMd && mdView === 'split') {
     body = (
@@ -116,6 +117,56 @@ export default function ViewerSwitch({ tab }: { tab: TabMeta }): React.ReactElem
   return (
     <div className="flex h-full min-h-0 flex-col">
       {!miniMode && <ViewerToolbar mdView={mdView} svgPreview={svgPreview} tab={tab} />}
+      {(tab.conflict || tab.recovered) && (
+        <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-(--separator) px-3 py-2 text-xs">
+          <div className="min-w-0 flex-1">
+            {tab.conflict && (
+              <p className="font-medium">
+                {tab.conflict.type === 'changed'
+                  ? 'This file changed on disk. Review both versions before saving.'
+                  : tab.conflict.type === 'missing'
+                    ? 'This file no longer exists on disk. Your edits are still open.'
+                    : 'This file cannot be read from disk. Your edits are still open.'}
+              </p>
+            )}
+            {tab.recovered && (
+              <p className="text-(--muted)">Recovered unsaved draft. The original file has not been updated.</p>
+            )}
+          </div>
+          {tab.conflict && (
+            <div className="flex shrink-0 gap-1">
+              <Button
+                isDisabled={tab.saving}
+                size="sm"
+                variant="secondary"
+                onPress={async () => {
+                  try {
+                    await useStore.getState().inspectDiskConflict(tab.id)
+                  } catch (reason) {
+                    toast('Could not review file', { description: reason instanceof Error ? reason.message : 'Please try again.', variant: 'danger' })
+                  }
+                }}
+              >
+                {tab.conflict.type === 'changed' ? 'Compare Versions' : 'Review'}
+              </Button>
+              <Button
+                isDisabled={tab.saving}
+                size="sm"
+                variant="tertiary"
+                onPress={async () => {
+                  try {
+                    await useStore.getState().saveTabAs(tab.id)
+                  } catch (reason) {
+                    toast('Save As failed', { description: reason instanceof Error ? reason.message : 'Your edits are still open.', variant: 'danger' })
+                  }
+                }}
+              >
+                Save As…
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       <div className="min-h-0 flex-1">{body}</div>
     </div>
   )

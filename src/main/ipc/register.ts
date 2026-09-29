@@ -9,8 +9,10 @@ import {
   renamePath,
   revealInFinder,
   trashPath,
-  writeTextFile
+  writeTextFile,
+  saveAs
 } from '../services/fs-service'
+import { exportDocument } from '../services/export-service'
 import { runSearch } from '../services/search'
 import { quickOpenSearch } from '../services/file-index'
 import { setWatchRoots } from '../services/watcher'
@@ -24,6 +26,10 @@ import {
   snapshot
 } from '../services/project-store'
 import { mainWindow, setAlwaysOnTop, setMiniMode, setOpacity, stateSnapshot } from '../window'
+import { loadSession, saveSession, removeSession } from '../services/session-store'
+import { respondClose } from '../lifecycle'
+import { takePendingOpenFiles } from '../services/open-files'
+import { isPathAllowed } from '../services/fs-service'
 import { updateWindowState } from '../window-state'
 
 type Handler<C extends IpcChannel> = (
@@ -35,9 +41,17 @@ function handle<C extends IpcChannel>(channel: C, fn: Handler<C>): void {
 }
 
 export function registerIpcHandlers(): void {
+  ipcMain.handle('export:document', (event, request) => {
+    const win = mainWindow()
+    if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) {
+      return { ok: false, code: 'EACCES', message: 'Export is available only from the editor window.' }
+    }
+    return exportDocument(request)
+  })
   handle('fs:readDir', (dirPath) => readDirSorted(dirPath))
   handle('fs:openFile', (filePath) => openFile(filePath))
-  handle('fs:writeFile', (filePath, content) => writeTextFile(filePath, content))
+  handle('fs:writeFile', (filePath, content, options) => writeTextFile(filePath, content, options))
+  handle('fs:saveAs', (path, content, forbiddenPaths) => saveAs(path, content, forbiddenPaths))
   handle('fs:createFile', (dirPath, name) => createFile(dirPath, name))
   handle('fs:createDir', (dirPath, name) => createDir(dirPath, name))
   handle('fs:rename', (path, newName) => renamePath(path, newName))
@@ -49,9 +63,27 @@ export function registerIpcHandlers(): void {
   handle('search:run', (req) => runSearch(req))
   handle('search:files', (roots, query) => quickOpenSearch(roots, query))
 
-  handle('watch:setRoots', (paths) => {
+  handle('watch:setRoots', async (paths) => {
+    const allowed = await Promise.all(paths.map(async (path) => await isPathAllowed(path) ? path : null))
     const win = mainWindow()
-    if (win) setWatchRoots(paths, win)
+    if (win) setWatchRoots(allowed.filter((path): path is string => path !== null), win)
+  })
+
+  handle('sessions:load', (id) => loadSession(id))
+  handle('sessions:save', (id, session) => saveSession(id, session))
+  handle('sessions:remove', (id) => removeSession(id))
+  handle('app:takePendingOpenFiles', () => takePendingOpenFiles())
+  handle('window:respondClose', (id, allow) => respondClose(id, allow))
+  handle('dialog:confirmUnsaved', async (names, action) => {
+    const win = mainWindow()
+    if (!win) return 'cancel'
+    const result = await dialog.showMessageBox(win, {
+      type: 'warning', title: 'Unsaved changes',
+      message: `Save changes before ${action}?`,
+      detail: names.slice(0, 20).join('\n') + (names.length > 20 ? `\n…and ${names.length - 20} more` : ''),
+      buttons: ['Save All', 'Discard', 'Cancel'], defaultId: 0, cancelId: 2, noLink: true
+    })
+    return result.response === 0 ? 'save' : result.response === 1 ? 'discard' : 'cancel'
   })
 
   handle('dialog:pickDirectories', async () => {

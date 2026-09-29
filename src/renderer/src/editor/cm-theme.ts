@@ -52,7 +52,7 @@ const baseTheme = EditorView.theme({
   '.cm-panel input, .cm-panel button': { fontFamily: 'var(--font-ui)' }
 })
 
-const highlight = HighlightStyle.define([
+export const codeHighlightStyle = HighlightStyle.define([
   { tag: [t.keyword, t.modifier, t.operatorKeyword, t.controlKeyword, t.moduleKeyword, t.self], color: 'var(--cm-keyword)' },
   { tag: [t.string, t.special(t.string), t.attributeValue, t.character], color: 'var(--cm-string)' },
   { tag: t.number, color: 'var(--cm-number)' },
@@ -83,5 +83,5 @@ const highlight = HighlightStyle.define([
 ])
 
 export function editorTheme(): Extension {
-  return [baseTheme, syntaxHighlighting(highlight)]
+  return [baseTheme, syntaxHighlighting(codeHighlightStyle)]
 }

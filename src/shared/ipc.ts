@@ -1,4 +1,11 @@
 import type {
+  CloseRequest,
+  ExportFormat,
+  ExportRequest,
+  ExportResult,
+  FileWriteRequest,
+  FileWriteResult,
+  ProjectSession,
   CreateResult,
   DirEntry,
   FileOpenResult,
@@ -21,9 +28,11 @@ import type {
  * build on every side that needs updating.
  */
 export interface IpcInvokeMap {
+  'export:document': (request: ExportRequest) => ExportResult
   'fs:readDir': (dirPath: string) => DirEntry[]
   'fs:openFile': (filePath: string) => FileOpenResult
-  'fs:writeFile': (filePath: string, content: string) => WriteResult
+  'fs:writeFile': (filePath: string, content: string, options: FileWriteRequest) => FileWriteResult
+  'fs:saveAs': (sourcePath: string, content: string, forbiddenPaths?: string[]) => FileWriteResult
   'fs:createFile': (dirPath: string, name: string) => CreateResult
   'fs:createDir': (dirPath: string, name: string) => CreateResult
   'fs:rename': (path: string, newName: string) => RenameResult
@@ -37,6 +46,12 @@ export interface IpcInvokeMap {
 
   'watch:setRoots': (paths: string[]) => void
 
+  'dialog:confirmUnsaved': (names: string[], action: string) => 'save' | 'discard' | 'cancel'
+
+  'sessions:load': (projectId: string) => ProjectSession | null
+  'sessions:save': (projectId: string, session: ProjectSession) => WriteResult
+  'sessions:remove': (projectId: string) => WriteResult
+
   'dialog:pickDirectories': () => string[]
 
   'projects:getAll': () => ProjectStoreSnapshot
@@ -47,6 +62,9 @@ export interface IpcInvokeMap {
   'projects:addRoots': (id: string, paths: string[]) => Project
   'projects:removeRoot': (id: string, rootId: string) => Project
 
+  'app:takePendingOpenFiles': () => string[]
+
+  'window:respondClose': (id: number, allow: boolean) => boolean
   'window:setOpacity': (value: number) => number
   'window:setAlwaysOnTop': (on: boolean) => boolean
   'window:setMiniMode': (on: boolean) => MiniModeResult
@@ -58,13 +76,18 @@ export type IpcChannel = keyof IpcInvokeMap
 
 /** Main → renderer push events. */
 export interface IpcEventMap {
+  'evt:exportActiveTab': (format: ExportFormat) => void
   'evt:systemThemeChanged': (dark: boolean) => void
   'evt:miniModeChanged': (on: boolean) => void
+  'evt:requestClose': (request: CloseRequest) => void
+  'evt:saveAllTabs': () => void
+  'evt:saveAsActiveTab': () => void
   'evt:saveActiveTab': () => void
   'evt:closeActiveTab': () => void
   'evt:fsChanged': (payload: FsChangedPayload) => void
   'evt:openSearch': () => void
   'evt:openQuickOpen': () => void
+  'evt:openExternalFile': (path: string) => void
 }
 
 export type IpcEventChannel = keyof IpcEventMap

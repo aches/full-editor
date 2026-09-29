@@ -10,6 +10,35 @@ npmRebuild: false
 electronLanguages:
   - en
   - zh_CN
+artifactName: ${name}-${version}-${arch}.${ext}
+publish:
+  provider: github
+  owner: aches
+  repo: full-editor
+  releaseType: release
+fileAssociations:
+  - ext: md
+    name: Markdown Document
+    description: Markdown Document
+    role: Editor
+    rank: Alternate
+  - ext: markdown
+    name: Markdown Document
+    description: Markdown Document
+    role: Editor
+    rank: Alternate
+  - ext: mdown
+    name: Markdown Document
+    role: Editor
+    rank: Alternate
+  - ext: mkd
+    name: Markdown Document
+    role: Editor
+    rank: Alternate
+  - ext: mkdn
+    name: Markdown Document
+    role: Editor
+    rank: Alternate
 mac:
   target:
     - target: dmg

@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from 'node:fs'
+import { statSync, watch, type FSWatcher } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { BrowserWindow } from 'electron'
 import type { FsChangedPayload } from '@shared/types'
@@ -40,9 +40,18 @@ export function setWatchRoots(paths: string[], win: BrowserWindow): void {
   pendingFiles = new Set()
   for (const root of paths) {
     try {
-      const w = watch(root, { recursive: true }, (_event, filename) => {
+      let isFile = true
+      try {
+        isFile = !statSync(root).isDirectory()
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      }
+      // Watch the parent so atomic replacement does not detach a file watcher.
+      const watchPath = isFile ? dirname(root) : root
+      const w = watch(watchPath, { recursive: !isFile }, (_event, filename) => {
         if (!filename) return
-        const abs = join(root, filename.toString())
+        const abs = join(watchPath, filename.toString())
+        if (isFile && abs !== root) return
         pendingFiles.add(abs)
         pendingDirs.add(dirname(abs))
         scheduleFlush()
