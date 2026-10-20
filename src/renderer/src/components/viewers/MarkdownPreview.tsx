@@ -47,7 +47,7 @@ export default function MarkdownPreview({ tabId }: { tabId: string }): React.Rea
   return (
     <div className="h-full overflow-y-auto">
       <article
-        className="md-root mx-auto max-w-3xl px-8 py-6 select-text"
+        className="md-root md-line-numbers mx-auto max-w-3xl py-6 pr-8 pl-16 select-text"
         dangerouslySetInnerHTML={{ __html: html }}
         onClick={(e) => {
           // External links open in the system browser, never in-app.

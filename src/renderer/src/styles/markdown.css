@@ -118,3 +118,49 @@
   max-width: 100%;
   border-radius: var(--radius);
 }
+
+/*
+ * Source line numbers in the preview gutter (not in exports). Each pseudo's
+ * line box matches its block's first line so the number sits on it.
+ */
+.md-line-numbers > [data-source-line] {
+  position: relative;
+}
+.md-line-numbers > [data-source-line]::before {
+  content: attr(data-source-line);
+  position: absolute;
+  top: 0;
+  right: calc(100% + 14px);
+  min-width: 3ch;
+  color: var(--cm-gutter);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: calc(14px * 1.7);
+  text-align: right;
+  pointer-events: none;
+  user-select: none;
+}
+.md-line-numbers > h1[data-source-line]::before {
+  line-height: calc(14px * 1.7 * 1.3);
+}
+.md-line-numbers > h2[data-source-line]::before {
+  line-height: calc(14px * 1.35 * 1.3);
+}
+.md-line-numbers > h3[data-source-line]::before {
+  line-height: calc(14px * 1.15 * 1.3);
+}
+.md-line-numbers > :is(h4, h5, h6)[data-source-line]::before {
+  line-height: calc(14px * 1.3);
+}
+.md-line-numbers > pre[data-source-line]::before {
+  top: 13px;
+  line-height: calc(12.5px * 1.6);
+}
+.md-line-numbers > table[data-source-line]::before {
+  top: 7px;
+  line-height: calc(13px * 1.7);
+}
+.md-line-numbers > hr[data-source-line]::before {
+  line-height: 1px;
+}
