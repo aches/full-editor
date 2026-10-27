@@ -42,6 +42,7 @@ export interface TabsSlice {
   activateTab: (id: string) => void
   closeTab: (id: string) => Promise<void>
   forceCloseTab: (id: string) => void
+  closeTabsRelativeTo: (anchorId: string, scope: 'left' | 'right' | 'others') => Promise<void>
   closeAllTabs: () => void
   markDirty: (id: string, dirty: boolean) => void
   saveTab: (id: string) => Promise<boolean>
@@ -146,6 +147,21 @@ export const createTabsSlice: StateCreator<AppStore, [], [], TabsSlice> = (set, 
     closeTab: async (id) => {
       if (!get().tabs.some((t) => t.id === id)) return
       await get().runGuardedAction('closing this tab', async () => { get().forceCloseTab(id) }, { tabIds: [id], omitTabIds: [id] })
+    },
+    closeTabsRelativeTo: async (anchorId, scope) => {
+      const tabs = get().tabs
+      const anchor = tabs.findIndex((t) => t.id === anchorId)
+      if (anchor < 0) return
+      const ids = tabs
+        .filter((_, i) => (scope === 'left' ? i < anchor : scope === 'right' ? i > anchor : i !== anchor))
+        .map((t) => t.id)
+      if (!ids.length) return
+      const action = scope === 'left' ? 'closing tabs to the left' : scope === 'right' ? 'closing tabs to the right' : 'closing other tabs'
+      await get().runGuardedAction(action, async () => {
+        const wasActive = ids.includes(get().activeTabId ?? '')
+        for (const id of ids) get().forceCloseTab(id)
+        if (wasActive) set({ activeTabId: anchorId })
+      }, { tabIds: ids, omitTabIds: ids })
     },
     forceCloseTab: (id) => {
       dropDoc(id)
