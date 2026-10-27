@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@heroui/react'
 import { currentDoc, subscribeDocChanges } from '@/editor/doc-registry'
+import { followMarkdownLink } from '@/lib/follow-link'
+import { useStore } from '@/stores'
 
 const RERENDER_DEBOUNCE_MS = 250
 
@@ -11,6 +13,9 @@ const RERENDER_DEBOUNCE_MS = 250
  */
 export default function MarkdownPreview({ tabId }: { tabId: string }): React.ReactElement {
   const [html, setHtml] = useState<string | null>(null)
+  const articleRef = useRef<HTMLElement>(null)
+  const pendingGoto = useStore((s) => s.pendingGoto)
+  const previewOnly = useStore((s) => s.mdViewByTab[tabId] === 'preview')
 
   useEffect(() => {
     let alive = true
@@ -36,6 +41,26 @@ export default function MarkdownPreview({ tabId }: { tabId: string }): React.Rea
     }
   }, [tabId])
 
+  // Preview-only tabs have no editor to consume a goto (followed `#L12` / `#heading`).
+  useEffect(() => {
+    const article = articleRef.current
+    if (!pendingGoto || !previewOnly || !article) return
+    const store = useStore.getState()
+    if (store.tabs.find((t) => t.id === tabId)?.path !== pendingGoto.path) return
+    let best: Element | null = null
+    for (const el of article.querySelectorAll('[data-source-line]')) {
+      if (Number(el.getAttribute('data-source-line')) > pendingGoto.line) break
+      best = el
+    }
+    best?.scrollIntoView({ block: 'start' })
+    store.setPendingGoto(null)
+  }, [pendingGoto, previewOnly, tabId, html])
+
+  const scrollToHeading = (slug: string): void => {
+    const el = articleRef.current?.querySelector(`[data-heading-slug="${CSS.escape(slug.toLowerCase())}"]`)
+    el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+
   if (html === null) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -47,15 +72,15 @@ export default function MarkdownPreview({ tabId }: { tabId: string }): React.Rea
   return (
     <div className="h-full overflow-y-auto">
       <article
+        ref={articleRef}
         className="md-root md-line-numbers mx-auto max-w-3xl py-6 pr-8 pl-16 select-text"
         dangerouslySetInnerHTML={{ __html: html }}
         onClick={(e) => {
-          // External links open in the system browser, never in-app.
+          // Web links open in the system browser; local links open in a tab.
           const anchor = (e.target as HTMLElement).closest('a')
           if (anchor) {
             e.preventDefault()
-            const href = anchor.getAttribute('href') ?? ''
-            if (/^https?:\/\//i.test(href)) void window.api.shell.openExternal(href)
+            void followMarkdownLink(anchor.getAttribute('href') ?? '', tabId, scrollToHeading)
           }
         }}
       />

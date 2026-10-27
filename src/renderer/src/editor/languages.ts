@@ -6,7 +6,9 @@ const cache = new Map<LanguageId, Extension>()
 const inflight = new Map<LanguageId, Promise<Extension | null>>()
 
 const loaders: Partial<Record<LanguageId, () => Promise<Extension>>> = {
-  markdown: () => import('@codemirror/lang-markdown').then((m) => m.markdown()),
+  markdown: () =>
+    Promise.all([import('@codemirror/lang-markdown'), import('./md-link-click')])
+      .then(([m, link]) => [m.markdown(), link.markdownLinkClick]),
   yaml: () => import('@codemirror/lang-yaml').then((m) => m.yaml()),
   json: () => import('@codemirror/lang-json').then((m) => m.json()),
   javascript: () => import('@codemirror/lang-javascript').then((m) => m.javascript()),
