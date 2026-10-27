@@ -3,6 +3,7 @@ export const UPDATE_REPO = 'aches/full-editor'
 export interface ReleaseAsset {
   name: string
   browser_download_url: string
+  size?: number
 }
 
 export interface ReleaseInfo {
@@ -35,12 +36,16 @@ export function isNewerVersion(candidate: string, current: string): boolean {
 }
 
 /** Prefer the installer for this CPU, then any installer, else send the user to the release page. */
-export function pickDownloadUrl(release: ReleaseInfo, arch: string): string {
+export function pickInstallerAsset(release: ReleaseInfo, arch: string): ReleaseAsset | null {
   const assets = release.assets ?? []
-  const byExt = (ext: string): ReleaseAsset[] => assets.filter((a) => a.name.toLowerCase().endsWith(ext))
-  const dmgs = byExt('.dmg')
-  const asset = dmgs.find((a) => a.name.includes(arch)) ?? dmgs[0] ?? byExt('.zip').find((a) => a.name.includes(arch))
-  return asset && isTrustedReleaseUrl(asset.browser_download_url) ? asset.browser_download_url : release.html_url
+  const dmgs = assets.filter((a) => a.name.toLowerCase().endsWith('.dmg'))
+  const zips = assets.filter((a) => a.name.toLowerCase().endsWith('.zip'))
+  const asset = dmgs.find((a) => a.name.includes(arch)) ?? dmgs[0] ?? zips.find((a) => a.name.includes(arch))
+  return asset && isTrustedReleaseUrl(asset.browser_download_url) ? asset : null
+}
+
+export function pickDownloadUrl(release: ReleaseInfo, arch: string): string {
+  return pickInstallerAsset(release, arch)?.browser_download_url ?? release.html_url
 }
 
 export function isTrustedReleaseUrl(url: string): boolean {

@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import { promises as fs } from 'node:fs'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -12,6 +13,9 @@ const { build } = await import(pathToFileURL(require.resolve('esbuild', { paths:
 const sandbox = await fs.mkdtemp(join(tmpdir(), 'editor-update-'))
 const outfile = join(sandbox, 'update.mjs')
 await build({ entryPoints: [resolve('src/shared/update.ts')], outfile, bundle: true, platform: 'node', format: 'esm' })
+const downloadOut = join(sandbox, 'download.mjs')
+await build({ entryPoints: [resolve('src/main/services/download.ts')], outfile: downloadOut, bundle: true, platform: 'node', format: 'esm' })
+const { downloadToFile } = await import(pathToFileURL(downloadOut).href)
 const { isNewerVersion, pickDownloadUrl, isMarkdownPath, isTrustedReleaseUrl } = await import(pathToFileURL(outfile).href)
 
 test('version comparison', () => {
@@ -46,4 +50,26 @@ test('markdown path detection', () => {
   assert.equal(isMarkdownPath('notes.markdown'), true)
   assert.equal(isMarkdownPath('/a/.md'), false)
   assert.equal(isMarkdownPath('/a/b.txt'), false)
+})
+
+test('installer download streams to disk and rejects truncated bodies', async () => {
+  const payload = Buffer.alloc(300_000, 7)
+  const server = createServer((req, res) => {
+    if (req.url === '/ok') { res.writeHead(200, { 'content-length': payload.length }); res.end(payload) }
+    else if (req.url === '/short') { res.writeHead(200, { 'content-length': payload.length }); res.write(payload.subarray(0, 1000)); res.destroy() }
+    else { res.writeHead(404); res.end() }
+  })
+  await new Promise((r) => server.listen(0, '127.0.0.1', r))
+  const base = `http://127.0.0.1:${server.address().port}`
+  try {
+    const dest = join(sandbox, 'ok.dmg')
+    const seen = []
+    await downloadToFile(fetch, `${base}/ok`, dest, { onProgress: (f) => seen.push(f) })
+    assert.equal((await fs.readFile(dest)).length, payload.length)
+    assert.equal(seen.at(-1), 1)
+    await assert.rejects(downloadToFile(fetch, `${base}/short`, join(sandbox, 'short.dmg')))
+    await assert.rejects(fs.stat(join(sandbox, 'short.dmg')))
+    await assert.rejects(fs.stat(join(sandbox, 'short.dmg.part')))
+    await assert.rejects(downloadToFile(fetch, `${base}/missing`, join(sandbox, 'missing.dmg')), /HTTP 404/)
+  } finally { server.close() }
 })

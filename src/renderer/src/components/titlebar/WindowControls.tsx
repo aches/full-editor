@@ -2,6 +2,7 @@ import { Button, Dropdown, Label, Popover, Separator, Slider, ToggleButton, Tool
 import { Blend, Check, Monitor, Moon, PictureInPicture2, Pin, Sun } from 'lucide-react'
 import { PALETTES } from '@/lib/themes'
 import { useStore } from '@/stores'
+import UpdateButton from './UpdateButton'
 
 function PaletteSwatch({ bg, accent }: { bg: string; accent: string }): React.ReactElement {
   return (
@@ -24,6 +25,8 @@ export default function WindowControls(): React.ReactElement {
 
   return (
     <div className="app-no-drag flex items-center gap-0.5">
+      <UpdateButton />
+
       <Popover>
         <Tooltip delay={500}>
           <Button isIconOnly aria-label="Window opacity" size="sm" variant="ghost">

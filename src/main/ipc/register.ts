@@ -29,6 +29,7 @@ import { mainWindow, setAlwaysOnTop, setMiniMode, setOpacity, stateSnapshot } fr
 import { loadSession, saveSession, removeSession } from '../services/session-store'
 import { respondClose } from '../lifecycle'
 import { takePendingOpenFiles } from '../services/open-files'
+import { checkForUpdates, openDownloadedInstaller, updateState } from '../services/updater'
 import { isPathAllowed } from '../services/fs-service'
 import { updateWindowState } from '../window-state'
 
@@ -73,6 +74,9 @@ export function registerIpcHandlers(): void {
   handle('sessions:save', (id, session) => saveSession(id, session))
   handle('sessions:remove', (id) => removeSession(id))
   handle('app:takePendingOpenFiles', () => takePendingOpenFiles())
+  handle('update:getState', () => updateState())
+  handle('update:check', () => checkForUpdates(true))
+  handle('update:openInstaller', () => openDownloadedInstaller())
   handle('window:respondClose', (id, allow) => respondClose(id, allow))
   handle('dialog:confirmUnsaved', async (names, action) => {
     const win = mainWindow()

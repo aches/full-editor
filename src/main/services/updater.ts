@@ -1,37 +1,46 @@
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
-import { app, dialog, net, shell } from 'electron'
-import { UPDATE_REPO, isNewerVersion, isTrustedReleaseUrl, pickDownloadUrl, type ReleaseInfo } from '@shared/update'
+import { basename, join } from 'node:path'
+import { app, net, shell } from 'electron'
+import type { UpdateState } from '@shared/types'
+import { UPDATE_REPO, isNewerVersion, isTrustedReleaseUrl, pickInstallerAsset, type ReleaseAsset, type ReleaseInfo } from '@shared/update'
 import { mainWindow } from '../window'
+import { downloadToFile } from './download'
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 const STARTUP_DELAY_MS = 8000
 const stateFile = (): string => join(app.getPath('userData'), 'update-state.json')
 
-interface UpdateState {
-  lastCheck: number
-  skippedVersion: string | null
+let state: UpdateState = { status: 'idle' }
+let readyPath: string | null = null
+let busy = false
+
+export function updateState(): UpdateState {
+  return state
 }
 
-let checking = false
+function setState(next: UpdateState): void {
+  state = next
+  const win = mainWindow()
+  if (!win || win.isDestroyed()) return
+  win.webContents.send('evt:updateState', next)
+  if (next.status === 'downloading') win.setProgressBar(next.progress ?? 2)
+  else win.setProgressBar(-1)
+}
 
-async function readState(): Promise<UpdateState> {
+async function lastCheck(): Promise<number> {
   try {
-    const parsed = JSON.parse(await fs.readFile(stateFile(), 'utf8')) as Partial<UpdateState>
-    return {
-      lastCheck: typeof parsed.lastCheck === 'number' ? parsed.lastCheck : 0,
-      skippedVersion: typeof parsed.skippedVersion === 'string' ? parsed.skippedVersion : null
-    }
+    const parsed = JSON.parse(await fs.readFile(stateFile(), 'utf8')) as { lastCheck?: unknown }
+    return typeof parsed.lastCheck === 'number' ? parsed.lastCheck : 0
   } catch {
-    return { lastCheck: 0, skippedVersion: null }
+    return 0
   }
 }
 
-async function writeState(patch: Partial<UpdateState>): Promise<void> {
+async function recordCheck(): Promise<void> {
   try {
-    await fs.writeFile(stateFile(), JSON.stringify({ ...(await readState()), ...patch }))
+    await fs.writeFile(stateFile(), JSON.stringify({ lastCheck: Date.now() }))
   } catch {
-    /* update bookkeeping must never surface as an error */
+    /* bookkeeping must never surface as an error */
   }
 }
 
@@ -47,62 +56,67 @@ async function fetchLatestRelease(): Promise<ReleaseInfo> {
   return release
 }
 
-function releaseNotes(release: ReleaseInfo): string {
-  const body = (release.body ?? '').trim()
-  return body.length > 800 ? `${body.slice(0, 800)}…` : body
-}
-
-async function offerUpdate(release: ReleaseInfo): Promise<void> {
-  const version = release.tag_name.replace(/^v/, '')
-  const options = {
-    type: 'info' as const,
-    title: 'Update available',
-    message: `Full Editor ${version} is available`,
-    detail: `You have ${app.getVersion()}.${releaseNotes(release) ? `\n\n${releaseNotes(release)}` : ''}`,
-    buttons: ['Download', 'Later', 'Skip This Version'],
-    defaultId: 0,
-    cancelId: 1,
-    noLink: true
-  }
-  const win = mainWindow()
-  const { response } = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options)
-  if (response === 0) await shell.openExternal(pickDownloadUrl(release, process.arch))
-  else if (response === 2) await writeState({ skippedVersion: version })
-}
-
-/** `manual` checks report every outcome; automatic ones stay silent unless there is something to install. */
-export async function checkForUpdates(manual: boolean): Promise<void> {
-  if (checking) return
-  checking = true
+async function downloadInstaller(version: string, asset: ReleaseAsset): Promise<void> {
+  // Asset names come from the network; keep only the final path segment.
+  const dest = join(app.getPath('downloads'), basename(asset.name))
   try {
-    const release = await fetchLatestRelease()
-    await writeState({ lastCheck: Date.now() })
-    const version = release.tag_name.replace(/^v/, '')
-    if (!isNewerVersion(version, app.getVersion())) {
-      if (manual) {
-        await dialog.showMessageBox({ type: 'info', message: 'You’re up to date', detail: `Full Editor ${app.getVersion()} is the latest version.`, buttons: ['OK'] })
-      }
+    if (asset.size && (await fs.stat(dest)).size === asset.size) {
+      readyPath = dest
+      setState({ status: 'ready', version })
       return
     }
-    if (!manual && (await readState()).skippedVersion === version) return
-    await offerUpdate(release)
-  } catch (error) {
-    if (manual) {
-      await dialog.showMessageBox({
-        type: 'warning', message: 'Could not check for updates',
-        detail: error instanceof Error ? error.message : String(error), buttons: ['OK']
-      })
-    }
-  } finally {
-    checking = false
+  } catch {
+    /* not downloaded yet */
   }
+  setState({ status: 'downloading', version, progress: 0 })
+  await downloadToFile((url, init) => net.fetch(url, init), asset.browser_download_url, dest, {
+    expectedSize: asset.size,
+    signal: AbortSignal.timeout(30 * 60 * 1000),
+    onProgress: (progress) => setState({ status: 'downloading', version, progress })
+  })
+  readyPath = dest
+  setState({ status: 'ready', version })
+}
+
+/** Automatic checks stay quiet unless a download starts; manual ones also report "up to date" and failures. */
+export async function checkForUpdates(manual: boolean): Promise<void> {
+  if (busy) return
+  if (state.status === 'ready' && readyPath) {
+    if (manual) setState({ ...state })
+    return
+  }
+  busy = true
+  try {
+    setState({ status: 'checking' })
+    const release = await fetchLatestRelease()
+    await recordCheck()
+    const version = release.tag_name.replace(/^v/, '')
+    if (!isNewerVersion(version, app.getVersion())) {
+      setState(manual ? { status: 'up-to-date', version: app.getVersion() } : { status: 'idle' })
+      return
+    }
+    const asset = pickInstallerAsset(release, process.arch)
+    if (!asset) throw new Error(`Version ${version} has no installer for this Mac. Get it from the release page.`)
+    await downloadInstaller(version, asset)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    setState(manual || state.status === 'downloading' ? { status: 'error', message } : { status: 'idle' })
+  } finally {
+    busy = false
+  }
+}
+
+export async function openDownloadedInstaller(): Promise<void> {
+  if (!readyPath) return
+  const error = await shell.openPath(readyPath)
+  if (error) shell.showItemInFolder(readyPath)
 }
 
 export function scheduleStartupUpdateCheck(): void {
   if (!app.isPackaged) return
   setTimeout(() => {
-    void readState().then((state) => {
-      if (Date.now() - state.lastCheck >= CHECK_INTERVAL_MS) return checkForUpdates(false)
+    void lastCheck().then((last) => {
+      if (Date.now() - last >= CHECK_INTERVAL_MS) return checkForUpdates(false)
     })
   }, STARTUP_DELAY_MS).unref()
 }

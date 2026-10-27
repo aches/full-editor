@@ -161,3 +161,11 @@ export interface ExportRequest {
 export type ExportResult =
   | { ok: true; path: string }
   | { ok: false; code: string; message: string }
+
+export type UpdateState =
+  | { status: 'idle' }
+  | { status: 'checking' }
+  | { status: 'up-to-date'; version: string }
+  | { status: 'downloading'; version: string; progress: number | null }
+  | { status: 'ready'; version: string }
+  | { status: 'error'; message: string }

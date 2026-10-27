@@ -18,6 +18,7 @@ import type {
   SearchRequest,
   SearchResponse,
   ThemePref,
+  UpdateState,
   WindowStateSnapshot,
   WriteResult
 } from './types'
@@ -63,6 +64,9 @@ export interface IpcInvokeMap {
   'projects:removeRoot': (id: string, rootId: string) => Project
 
   'app:takePendingOpenFiles': () => string[]
+  'update:getState': () => UpdateState
+  'update:check': () => void
+  'update:openInstaller': () => void
 
   'window:respondClose': (id: number, allow: boolean) => boolean
   'window:setOpacity': (value: number) => number
@@ -88,6 +92,7 @@ export interface IpcEventMap {
   'evt:openSearch': () => void
   'evt:openQuickOpen': () => void
   'evt:openExternalFile': (path: string) => void
+  'evt:updateState': (state: UpdateState) => void
 }
 
 export type IpcEventChannel = keyof IpcEventMap

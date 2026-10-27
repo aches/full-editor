@@ -11,11 +11,6 @@ electronLanguages:
   - en
   - zh_CN
 artifactName: ${name}-${version}-${arch}.${ext}
-publish:
-  provider: github
-  owner: aches
-  repo: full-editor
-  releaseType: release
 fileAssociations:
   - ext: md
     name: Markdown Document

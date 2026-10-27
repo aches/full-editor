@@ -20,8 +20,8 @@ pnpm test:export    # 验证真实 PNG/PDF 导出和导出菜单
 
 ## 发布与更新
 
-- 发布:改 `package.json` 的 `version` → 提交 → `git tag v0.3.0 && git push origin v0.3.0`。`.github/workflows/release.yml` 会校验 tag 与版本号一致,跑类型检查和测试,再用 `pnpm release` 构建 dmg/zip 并发布到 GitHub Release。也可以本地 `GH_TOKEN=... pnpm release` 手动发布。
-- 更新源:GitHub Releases(`aches/full-editor`)。应用启动 8 秒后每 24 小时静默检查一次,菜单「Full Editor → Check for Updates…」可手动检查;发现新版本会弹窗(下载 / 稍后 / 跳过此版本),「下载」直接打开对应架构的 dmg。应用未签名,macOS 无法静默自动安装,所以采用下载后手动替换的方式。
+- 发布:改 `package.json` 的 `version` → 提交 → `git tag v0.3.0 && git push origin v0.3.0`。`.github/workflows/release.yml` 会校验 tag 与版本号一致,跑类型检查和测试,再用 `pnpm dist` 构建 dmg/zip,并用 `gh release create` 一次性发布到 GitHub Release(不用 electron-builder 自带的发布,它并行上传会产生重复的 Release)。手动发布:`pnpm dist && gh release create v0.3.0 dist/*.dmg dist/*.zip --generate-notes`。
+- 更新源:GitHub Releases(`aches/full-editor`)。标题栏左侧有「检查更新」按钮(菜单「Full Editor → Check for Updates…」等效);应用启动 8 秒后每 24 小时也会静默检查一次。发现新版本会自动把对应架构的 dmg 下载到「下载」文件夹(按钮显示进度,校验完整后才落盘),完成后按钮变为「Install 版本号」,点击打开安装包,退出应用后拖入「应用程序」替换。应用未签名,macOS 无法静默自动安装,所以最后一步仍需手动。
 - Markdown 关联:打包后 `.md/.markdown/.mdown/.mkd/.mkdn` 可在 Finder「打开方式」或「显示简介 → 更改全部」中选择 Full Editor;双击/命令行打开的文件会在已运行的窗口新开标签(单实例),并仅授予该文件的访问权限。
 
 ## 图片 / PDF 导出

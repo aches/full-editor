@@ -37,7 +37,11 @@ jobs:
 
       - run: pnpm test
 
-      - name: Build and publish to GitHub Releases
-        run: pnpm release
+      - name: Build installers
+        run: pnpm dist
+
+      # electron-builder's own publisher uploads in parallel and can create duplicate releases.
+      - name: Publish GitHub Release
+        run: gh release create "$GITHUB_REF_NAME" dist/*.dmg dist/*.zip --title "${GITHUB_REF_NAME#v}" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

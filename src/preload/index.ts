@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { IpcChannel, IpcInvokeMap } from '@shared/ipc'
-import type { ExportFormat, ExportRequest, CloseRequest, FileWriteRequest, ProjectSession, FsChangedPayload, SearchRequest, ThemePref } from '@shared/types'
+import type { ExportFormat, ExportRequest, CloseRequest, FileWriteRequest, ProjectSession, FsChangedPayload, SearchRequest, ThemePref, UpdateState } from '@shared/types'
 
 type Invoke = <C extends IpcChannel>(
   channel: C,
@@ -63,6 +63,11 @@ const api = {
   app: {
     takePendingOpenFiles: () => invoke('app:takePendingOpenFiles')
   },
+  update: {
+    getState: () => invoke('update:getState'),
+    check: () => invoke('update:check'),
+    openInstaller: () => invoke('update:openInstaller')
+  },
   window: {
     respondClose: (id: number, allow: boolean) => invoke('window:respondClose', id, allow),
     setOpacity: (value: number) => invoke('window:setOpacity', value),
@@ -83,7 +88,8 @@ const api = {
     onFsChanged: subscribe<FsChangedPayload>('evt:fsChanged'),
     onOpenSearch: subscribe<void>('evt:openSearch'),
     onOpenQuickOpen: subscribe<void>('evt:openQuickOpen'),
-    onOpenExternalFile: subscribe<string>('evt:openExternalFile')
+    onOpenExternalFile: subscribe<string>('evt:openExternalFile'),
+    onUpdateState: subscribe<UpdateState>('evt:updateState')
   }
 }
 
